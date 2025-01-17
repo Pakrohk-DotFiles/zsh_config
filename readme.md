@@ -33,7 +33,7 @@ dnf install zsh git curl
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/zsh-config.git ~/.zsh_config
+git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
 ```
 
 2. Create symbolic links:
