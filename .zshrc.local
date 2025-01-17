@@ -1,0 +1,31 @@
+# Lazy-load completions
+znap fpath _rustup 'rustup completions zsh'
+znap fpath _cargo 'rustup completions zsh cargo'
+
+# Load kitty config if it exists
+[[ -f ~/.config/kitty/kitty_config.sh ]] && source ~/.config/kitty/kitty_config.sh
+
+
+# Powerlevel10k instant prompt
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Powerlevel10k
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
+  os_icon
+  dir
+  vcs
+  virtualenv
+)
+
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
+  status
+  command_execution_time
+  background_jobs
+  time
+)
+
+
+POWERLEVEL9K_VCS_GIT_HOOKS=(vcs-detect-changes git-untracked git-aheadbehind git-stash git-remotebranch git-tagname)
+
