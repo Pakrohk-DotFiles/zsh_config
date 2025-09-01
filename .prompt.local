@@ -1,0 +1,126 @@
+# ~/.prompt.local
+# Portable Starship bootstrap and config with RPROMPT helpers
+# Source this from ~/.zshrc: [ -f ~/.prompt.local ] && source ~/.prompt.local
+
+# 1) Add user-local bin to PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+# 2) Auto-install Starship (idempotent)
+ensure_starship() {
+  if command -v starship >/dev/null 2>&1; then
+    return 0
+  fi
+  mkdir -p "$HOME/.local/bin"
+  echo "[prompt] Installing starship to ~/.local/bin ..."
+  if curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir "$HOME/.local/bin"; then
+    echo "[prompt] Starship installed"
+  elif command -v pacman >/dev/null 2>&1; then
+    echo "[prompt] Curl failed, trying pacman ..."
+    sudo pacman -S --noconfirm starship || echo "[prompt] Pacman install failed"
+  else
+    echo "[prompt] Please install starship manually"
+  fi
+}
+ensure_starship
+
+# 3) Initialize Starship for zsh
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
+
+# 4) Create default starship.toml if missing
+STARSHIP_CONF="$HOME/.config/starship.toml"
+if [[ ! -f "$STARSHIP_CONF" ]]; then
+  mkdir -p "$(dirname "$STARSHIP_CONF")"
+  cat > "$STARSHIP_CONF" <<'TOML'
+# ~/.config/starship.toml
+# Prompt: Line 1 (empty), Line 2 (user@host -> dir git cmd_duration), Line 3 (lambda with space)
+
+add_newline = true
+command_timeout = 2000
+
+# Prompt format
+format = """
+${custom.userinfo}$directory$git_status($git_branch) $cmd_duration
+$character
+"""
+
+[custom.userinfo]
+command = "printf '%s@%s -> ' \"$USER\" \"$(uname -n)\""
+when = "true"
+style = "bold 242"
+
+[directory]
+truncate_to_repo = true
+format = "[$path ](bold blue)"
+style = "bold blue"
+
+[git_branch]
+symbol = "  "
+format = "[$symbol$branch](bold yellow)"
+truncation_length = 8
+style = "bold yellow"
+
+[git_status]
+format = "[$all_status$ahead_behind](bold purple)"
+style = "bold purple"
+conflicted = "⚔️($count)"
+ahead = "↑($count)"
+behind = "↓($count)"
+diverged = "↕($count)"
+untracked = "★($count)"
+stashed = "📍($count)"
+modified = " ✏️($count)"
+staged = "✔($count)"
+renamed = "➜($count)"
+deleted = "🗑($count)"
+
+[cmd_duration]
+min_time = 2000
+format = "[ ⏱ took $duration](bold green)"
+style = "bold green"
+
+[character]
+success_symbol = "[ λ](bold green)"
+error_symbol = "[ λ](bold red)"
+vicmd_symbol = "[ λ](bold yellow)"
+format = "$symbol "
+TOML
+  echo "[prompt] Created $STARSHIP_CONF"
+fi
+
+# 5) RPROMPT: Python virtualenv and time
+preexec() {
+  if [[ -n $EPOCHSECONDS ]]; then
+    ZSH_CMD_START=$EPOCHSECONDS
+  else
+    ZSH_CMD_START=$(date +%s)
+  fi
+}
+
+precmd() {
+  # Python virtualenv
+  local venv=""
+  if [[ -n $VIRTUAL_ENV ]]; then
+    venv="%F{129}🐍 $(basename "$VIRTUAL_ENV")%f "  # Color 129 (purple) to match git_status
+  fi
+
+  # Time (HH:MM:SS)
+  local tm="%F{242}$(date +%H:%M:%S)%f"
+
+  # Compose RPROMPT: virtualenv | time
+  RPROMPT="${venv}${tm}"
+}
+
+precmd_functions+=(precmd)
+preexec_functions+=(preexec)
+
+# 6) Helper: Backup starship config
+backup_starship_conf() {
+  if [[ -f "$STARSHIP_CONF" ]]; then
+    cp -v "$STARSHIP_CONF" "${STARSHIP_CONF}.bak-$(date +%Y%m%d-%H%M%S)"
+    echo "[prompt] Backed up $STARSHIP_CONF"
+  else
+    echo "[prompt] No config to backup"
+  fi
+}

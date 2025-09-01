@@ -1,0 +1,124 @@
+########################################
+# Aliases and Functions for ZSH
+# Keep .zshrc clean & modular
+########################################
+
+### --- Basic Shortcuts ---
+alias vi='nvim'                           # Use Neovim instead of Vim
+alias ls='ls --color=auto -lahF'          # Colorful + human-readable ls
+alias grep='grep --color=auto'            # Grep with colors
+alias df='df -h'                          # Human-readable disk usage
+alias du='du -h -c'                       # Disk usage summary
+
+### --- System Maintenance ---
+# Refresh system fonts cache
+refonts() {
+  echo "[*] Refreshing font cache..."
+  sudo fc-cache -f -r -v
+}
+
+# Remove orphaned packages safely
+softar() {
+  echo "[*] Removing orphaned packages..."
+  sudo pacman -Rn $(pacman -Qdtq)
+}
+
+# Full system rebuild: initramfs + grub
+rebuild_system() {
+  echo "[*] Rebuilding initramfs..."
+  sudo mkinitcpio -P
+  echo "[*] Updating grub..."
+  sudo grub-mkconfig -o /boot/grub/grub.cfg
+}
+alias upk='sudo mkinitcpio -P'            # Only rebuild kernel images
+alias upg='sudo grub-mkconfig -o /boot/grub/grub.cfg'  # Only rebuild grub
+
+# Restart audio + Discord
+AReboot() {
+  echo "[*] Restarting Pipewire..."
+  systemctl --user restart pipewire
+  systemctl --user daemon-reload
+}
+DAReboot() {
+  echo "[*] Restarting Discord..."
+  killall Discord &>/dev/null
+  (discord &>/dev/null &)
+  AReboot
+}
+
+### --- Mirrors & Repack ---
+# Refresh Arch mirrors (default: France + Iran)
+reflectmirrors() {
+  local countries="${1:-France,Iran}"
+  echo "[*] Refreshing mirrors for: $countries"
+  sudo reflector --country "$countries" -l 10 --age 12 \
+    --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+  cat /etc/pacman.d/mirrorlist
+}
+
+# Repack all native packages
+repack_arch() {
+  echo "[*] Reinstalling all explicitly installed packages..."
+  pacman -Qnq | sudo pacman -Sy -
+}
+
+### --- Navigation Helpers ---
+# Create and enter a directory
+mkcd() {
+  mkdir -p -- "$1" && cd -- "$1"
+}
+
+# Fuzzy cd into subdirs
+cdf() {
+  local dir
+  dir=$(find ${1:-.} -type d 2>/dev/null | fzf +m) && cd "$dir"
+}
+
+# Go up N directories (e.g., up 3)
+up() {
+  local d=""
+  limit=$1
+  for ((i=1 ; i<=limit ; i++)); do
+    d="../$d"
+  done
+  cd "$d" || return
+}
+
+### --- Useful Helpers ---
+# Search in man pages
+cheat() {
+  man "$1" | grep -- "$2"
+}
+
+# Extract archives easily
+extract() {
+  if [ -f "$1" ]; then
+    case "$1" in
+      *.tar.bz2) tar xjf "$1" ;;
+      *.tar.gz)  tar xzf "$1" ;;
+      *.bz2)     bunzip2 "$1" ;;
+      *.rar)     unrar x "$1" ;;
+      *.gz)      gunzip "$1" ;;
+      *.tar)     tar xf "$1" ;;
+      *.tbz2)    tar xjf "$1" ;;
+      *.tgz)     tar xzf "$1" ;;
+      *.zip)     unzip "$1" ;;
+      *.Z)       uncompress "$1" ;;
+      *.7z)      7z x "$1" ;;
+      *)         echo "don't know how to extract '$1'..." ;;
+    esac
+  else
+    echo "'$1' is not a valid file"
+  fi
+}
+
+### --- Global Aliases ---
+alias -g G='| grep'                       # Quick pipe to grep
+alias -g H='| head'                       # Quick pipe to head
+alias -g T='| tail'                       # Quick pipe to tail
+alias -g L='| less'                       # Quick pipe to less
+
+########################################
+# End of ~/.zsh_aliases
+########################################
+

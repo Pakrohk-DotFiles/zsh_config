@@ -1,17 +1,13 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
+########################################
+# ~/.zshrc - Complete ZSH Configuration
+########################################
+### --- Bootstrap Znap ---
+[[ -r ~/.zsh_config/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git ~/.zsh_config/znap
+source ~/.zsh_config/znap/znap.zsh
 
-# Download Znap, if it's not there yet.
-[[ -r ~/.zsh_config/znap/znap.zsh ]] ||
-    git clone --depth 1 -- \
-        https://github.com/marlonrichert/zsh-snap.git ~/.zsh_config/znap
-source ~/.zsh_config/znap/znap.zsh  # Start Znap
-
-# ZSH options
+########################################
+# ZSH Options
+########################################
 setopt AUTO_PUSHD
 setopt AUTO_CD
 setopt HIST_IGNORE_ALL_DUPS
@@ -19,19 +15,29 @@ setopt HIST_SAVE_NO_DUPS
 setopt INC_APPEND_HISTORY
 setopt SHARE_HISTORY
 
-# History configuration
+########################################
+# History
+########################################
 HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
+HISTSIZE=100000
+SAVEHIST=100000
 
-# Key bindings
-# bindkey -v
+########################################
+# Key Bindings
+########################################
+# bindkey -v  # vi-mode if you prefer
 bindkey '^[[A' history-beginning-search-backward
 bindkey '^[[B' history-beginning-search-forward
+bindkey '^R' history-incremental-search-backward
+bindkey '^P' up-line-or-search
+bindkey '^N' down-line-or-search
 
-# Completion configuration
+########################################
+# Completion
+########################################
 znap source zsh-users/zsh-completions
 autoload -Uz compinit && compinit
+
 zstyle ':completion:*' menu select
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/.zcompcache"
@@ -48,10 +54,14 @@ zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 
 zstyle ':completion:*' rehash true
 ENABLE_CORRECTION="true"
 
-# Prompt
-znap source romkatv/powerlevel10k
+########################################
+# Prompt / Theme
+########################################
+[ -f ~/.prompt.local ] && source ~/.prompt.local
 
+########################################
 # Plugins
+########################################
 znap source zdharma-continuum/fast-syntax-highlighting
 znap source zsh-users/zsh-autosuggestions
 znap source marlonrichert/zcolors
@@ -60,53 +70,62 @@ znap source ohmyzsh/ohmyzsh plugins/git
 znap source djui/alias-tips
 znap source ohmyzsh/ohmyzsh plugins/colored-man-pages
 znap source ohmyzsh/ohmyzsh plugins/virtualenvwrapper
-
-# Install and load z
 znap source rupa/z
 
 # Evaluate zcolors
 znap eval zcolors "zcolors ${(q)LS_COLORS}"
 
-# Editor configuration
+########################################
+# Environment
+########################################
 export EDITOR='nvim'
+export BROWSER='firefox'
+export TERMINAL='kitty'
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
 
-# Aliases
-alias vi='nvim'
-alias ls='ls --color=auto -la'
-alias grep='grep --color=auto'
-alias refonts='sudo fc-cache -f -r -v'
-alias softar='sudo pacman -Rn $(pacman -Qdtq)'
-alias p='paru'
-alias ar='sudo pacman -Rsn $(pacman -Qdtq)'
-alias upgk="sudo mkinitcpio -P && sudo grub-mkconfig -o /boot/grub/grub.cfg"
-alias upg="sudo grub-mkconfig -o /boot/grub/grub.cfg"
-alias upk="sudo mkinitcpio -P"
-alias AReboot='systemctl --user restart pipewire && systemctl --user daemon-reload'
-alias DAReboot='killall Discord && ((discord &) &>/dev/null) && AReboot'
-alias reflectmirrors='sudo reflector --country "France,Iran" -l 10 --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist && cat /etc/pacman.d/mirrorlist'
-alias repack_arch='pacman -Qnq | sudo pacman -Sy - '
+########################################
+# Aliases & Functions
+########################################
+# Keep the main config clean
+[ -f ~/.zsh_aliases ] && source ~/.zsh_aliases
 
-# Functions
-function mkcd() {
-    mkdir -p "$1" && cd "$1"
-}
+# Example minimal builtin function (mkcd stays here as it's too common)
+mkcd() { mkdir -p "$1" && cd "$1"; }
 
 # Cheat.sh integration
-function cheat() {
-    curl cheat.sh/"$1"
+cheat() { curl -s cheat.sh/"$1"; }
+
+########################################
+# External Configs
+########################################
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
+[ -f ~/.paru_fzf.zsh ] && source ~/.paru_fzf.zsh
+
+# Dart completion
+[ -f ~/.config/.dart-cli-completion/zsh-config.zsh ] && source ~/.config/.dart-cli-completion/zsh-config.zsh
+
+########################################
+# Fallback for custom functions
+########################################
+fpath+=~/.zfunc
+autoload -Uz compinit
+compinit
+
+# Check and start SSH Agent automatically in the background
+function ensure_ssh_agent() {
+  # Check if SSH Agent is running
+  if [[ -z "$SSH_AUTH_SOCK" ]] || ! ssh-add -l >/dev/null 2>&1; then
+    # Start SSH Agent in the background and suppress output
+    eval "$(ssh-agent -s)" >/dev/null 2>&1 &
+    # Add SSH key (replace with your key path if different)
+    ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1
+  fi
 }
 
-# Dart completion (if needed)
-[[ -f /home/ali/.config/.dart-cli-completion/zsh-config.zsh ]] && source /home/ali/.config/.dart-cli-completion/zsh-config.zsh
+# Run the function automatically when Zsh starts
+ensure_ssh_agent
+########################################
+# End of ~/.zshrc
+########################################
 
-# Load any local configurations
-[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
-[[ -f ~/.paru_fzf.zsh ]] && source ~/.paru_fzf.zsh
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-
-
-
-fpath+=~/.zfunc; autoload -Uz compinit; compinit
