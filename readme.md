@@ -4,7 +4,7 @@ A powerful and modular ZSH configuration setup focused on productivity and user 
 
 ## ✨ Features
 
-- Fast and responsive shell experience with Powerlevel10k instant prompt
+- Fast and responsive shell experience with Starship and Znap
 - Comprehensive plugin management using Znap
 - Intelligent command completion system
 - History management with duplicate prevention
@@ -41,17 +41,16 @@ git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
 ln -sf ~/.zsh_config/.zshrc ~/.zshrc
 ln -sf ~/.zsh_config/.zshrc.local ~/.zshrc.local
 ln -sf ~/.zsh_config/.paru_fzf.zsh ~/.paru_fzf.zsh
+ln -sf ~/.zsh_config/.prompt.local ~/.prompt.local
+ln -sf ~/.zsh_config/.zsh_aliases ~/.zsh_aliases
 ```
 
-3. Install Znap (plugin manager):
-```bash
-git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git ~/.zsh_config/znap
-```
-
-4. Set ZSH as default shell:
+3. Set ZSH as default shell:
 ```bash
 chsh -s $(which zsh)
 ```
+
+The first time you run ZSH, `znap` and `starship` will be automatically installed.
 
 ## 🔧 Configuration Structure
 
@@ -59,22 +58,30 @@ chsh -s $(which zsh)
 ~/.zsh_config/
 ├── .zshrc           # Main configuration file
 ├── .zshrc.local     # Local/machine-specific settings
+├── .prompt.local    # Starship prompt configuration and installation
+├── .zsh_aliases     # Collection of shell aliases and functions
 └── .paru_fzf.zsh    # Package management utilities
 ```
 
 ### Main Components
 
 - **Base Configuration** (.zshrc)
-  - Shell options and history settings
-  - Key bindings
+  - Shell options, history, and key bindings
   - Completion system configuration
-  - Plugin management
-  - Common aliases and functions
+  - Plugin management with Znap
+  - Sources external configuration files
+
+- **Prompt Configuration** (.prompt.local)
+  - Ensures Starship is installed
+  - Initializes the Starship prompt
+  - Creates a default `starship.toml` if none exists
 
 - **Local Configuration** (.zshrc.local)
-  - Powerlevel10k theme settings
-  - Rust development environment
-  - Machine-specific configurations
+  - Machine-specific environment variables and settings
+  - Can be used to override default settings
+
+- **Aliases and Functions** (.zsh_aliases)
+  - Contains shortcuts, system maintenance functions, and navigation helpers
 
 - **Package Management** (.paru_fzf.zsh)
   - Interactive package management interface
@@ -86,12 +93,13 @@ chsh -s $(which zsh)
 - `fast-syntax-highlighting`: Real-time command syntax highlighting
 - `zsh-autosuggestions`: Fish-like command suggestions
 - `zsh-completions`: Additional completion definitions
-- `powerlevel10k`: Modern, informative prompt theme
 - `z`: Quick directory jumping
 - `wd`: Directory bookmarking
 - `git`: Enhanced Git integration
 - `colored-man-pages`: Colorized man pages
 - `virtualenvwrapper`: Python virtual environment management
+- `alias-tips`: Reminds you when you forget to use an alias
+- `zcolors`: Provides colorized `ls` output
 
 ## 📦 Package Management Features
 
@@ -110,27 +118,45 @@ Access package management utilities by running `pf` command:
 - Efficient plugin management with Znap
 - Optimized completion system
 
+## 🔐 SSH Agent Management
+
+The configuration automatically manages an `ssh-agent` instance for you:
+- The agent is started on your first ZSH session.
+- The agent's environment is saved and reused across all subsequent shell sessions.
+- It automatically loads your `~/.ssh/id_ed25519` key, so you only need to enter your passphrase once.
+
 ## 🛠 Customization
 
-1. Local machine configurations can be added to `.zshrc.local`
-2. Additional aliases can be defined in `.zshrc`
-3. Powerlevel10k prompt can be reconfigured using:
-```bash
-p10k configure
-```
+1. **Local Settings**: Machine-specific configurations can be added to `.zshrc.local`.
+2. **Aliases**: Additional aliases and functions can be defined in `.zsh_aliases`.
+3. **Prompt**: The Starship prompt can be configured by editing `~/.config/starship.toml`. If this file doesn't exist, it will be created with a default configuration the first time you start ZSH. You can learn more about configuring Starship in the [official documentation](https://starship.rs/config/).
 
-## 🔍 Useful Commands
+## 🔍 Useful Commands & Aliases
 
-- `mkcd`: Create and enter directory
-- `cheat`: Access cheat.sh
-- `AReboot`: Restart audio system
-- `reflectmirrors`: Update pacman mirrors
-- `repack_arch`: Reinstall all native packages
+### Functions
+- `mkcd <dir>`: Create a directory and enter it.
+- `cdf`: Fuzzy search for a subdirectory and `cd` into it.
+- `up <n>`: Go up `n` parent directories.
+- `extract <file>`: Extract common archive types.
+- `cheat <cmd> <term>`: Search the man page of `<cmd>` for `<term>`.
+- `AReboot`: Restart the Pipewire audio system.
+- `DAReboot`: Restart Discord and the audio system.
+- `reflectmirrors [countries]`: Refresh Arch Linux mirrors (e.g., `reflectmirrors "United States,Germany"`).
+- `repack_arch`: Reinstall all native packages from repositories.
+- `refonts`: Refresh the system's font cache.
+- `softar`: Remove orphaned packages.
+- `rebuild_system`: Rebuild initramfs and GRUB.
+
+### Global Aliases
+- `G`: Pipe to `grep` (e.g., `ps aux G zsh`).
+- `H`: Pipe to `head`.
+- `T`: Pipe to `tail`.
+- `L`: Pipe to `less`.
 
 ## 💻 Server-Specific Considerations
 
 For server environments:
-- Powerlevel10k theme automatically adjusts for non-GUI environments
+- The Starship prompt automatically adjusts for non-GUI environments
 - Package management features work with basic package managers
 - Performance optimizations help with remote connections
 - No GUI-dependent features are required
