@@ -36,40 +36,36 @@ dnf install zsh git curl
 git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
 ```
 
-2. Create symbolic links:
+2. Create a single symbolic link for the main ZSH configuration file:
 ```bash
 ln -sf ~/.zsh_config/.zshrc ~/.zshrc
-ln -sf ~/.zsh_config/.zshrc.local ~/.zshrc.local
-ln -sf ~/.zsh_config/.paru_fzf.zsh ~/.paru_fzf.zsh
-ln -sf ~/.zsh_config/.prompt.local ~/.prompt.local
-ln -sf ~/.zsh_config/.zsh_aliases ~/.zsh_aliases
 ```
 
-3. Set ZSH as default shell:
+3. Set ZSH as your default shell:
 ```bash
 chsh -s $(which zsh)
 ```
 
-The first time you run ZSH, `znap` and `starship` will be automatically installed.
+Now, restart your terminal. The first time you launch ZSH, `znap` and `starship` will be automatically installed. All other configuration files are sourced directly from `~/.zsh_config`, keeping your home directory clean.
 
 ## 🔧 Configuration Structure
 
 ```
 ~/.zsh_config/
-├── .zshrc           # Main configuration file
-├── .zshrc.local     # Local/machine-specific settings
-├── .prompt.local    # Starship prompt configuration and installation
-├── .zsh_aliases     # Collection of shell aliases and functions
-└── .paru_fzf.zsh    # Package management utilities
+├── .zshrc           # Main config file (symlinked to ~/.zshrc)
+├── .zshrc.local     # Local/machine-specific settings (sourced by .zshrc)
+├── .prompt.local    # Starship prompt setup (sourced by .zshrc)
+├── .zsh_aliases     # Custom aliases and functions (sourced by .zshrc)
+├── .paru_fzf.zsh    # Package management utilities (sourced by .zshrc)
+└── .zfunc/          # Directory for custom completion functions
 ```
 
 ### Main Components
 
 - **Base Configuration** (.zshrc)
-  - Shell options, history, and key bindings
-  - Completion system configuration
-  - Plugin management with Znap
-  - Sources external configuration files
+  - The only file that needs to be symlinked to your home directory.
+  - Sets shell options, history, and key bindings.
+  - Initializes the plugin manager and sources all other configuration files from `~/.zsh_config`.
 
 - **Prompt Configuration** (.prompt.local)
   - Ensures Starship is installed
