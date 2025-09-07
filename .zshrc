@@ -58,6 +58,7 @@ ENABLE_CORRECTION="true"
 # Prompt / Theme
 ########################################
 [ -f ~/.prompt.local ] && source ~/.prompt.local
+znap prompt
 
 ########################################
 # Plugins
@@ -89,13 +90,6 @@ export LC_ALL="en_US.UTF-8"
 ########################################
 # Keep the main config clean
 [ -f ~/.zsh_aliases ] && source ~/.zsh_aliases
-
-# Example minimal builtin function (mkcd stays here as it's too common)
-mkcd() { mkdir -p "$1" && cd "$1"; }
-
-# Cheat.sh integration
-cheat() { curl -s cheat.sh/"$1"; }
-
 ########################################
 # External Configs
 ########################################
@@ -106,25 +100,58 @@ cheat() { curl -s cheat.sh/"$1"; }
 [ -f ~/.config/.dart-cli-completion/zsh-config.zsh ] && source ~/.config/.dart-cli-completion/zsh-config.zsh
 
 ########################################
+# Evals
+########################################
+
+
+########################################
+# SSH Agent Management (Zsh Compatible)
+# - Starts ssh-agent if not already running
+# - Reuses environment across sessions
+# - Loads key only once to avoid repeated passphrase prompts
+########################################
+
+SSH_ENV="$HOME/.ssh/agent-environment"
+
+# Start a new ssh-agent and save its environment variables
+start_agent() {
+    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "$SSH_ENV"
+    chmod 600 "$SSH_ENV"
+    . "$SSH_ENV" >/dev/null
+}
+
+# Add private key if agent has no keys loaded
+load_keys() {
+    if ! ssh-add -l >/dev/null 2>&1; then
+        ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1
+    fi
+}
+
+# Restore existing agent environment if available
+if [[ -f "$SSH_ENV" ]]; then
+    . "$SSH_ENV" >/dev/null
+    if ! kill -0 "$SSH_AGENT_PID" >/dev/null 2>&1; then
+        start_agent
+    fi
+else
+    start_agent
+fi
+
+# Ensure environment is valid
+if [[ -z "$SSH_AUTH_SOCK" ]] || ! kill -0 "$SSH_AGENT_PID" >/dev/null 2>&1; then
+    start_agent
+fi
+
+# Load keys only if necessary
+load_keys
+
+########################################
 # Fallback for custom functions
 ########################################
 fpath+=~/.zfunc
 autoload -Uz compinit
 compinit
 
-# Check and start SSH Agent automatically in the background
-function ensure_ssh_agent() {
-  # Check if SSH Agent is running
-  if [[ -z "$SSH_AUTH_SOCK" ]] || ! ssh-add -l >/dev/null 2>&1; then
-    # Start SSH Agent in the background and suppress output
-    eval "$(ssh-agent -s)" >/dev/null 2>&1 &
-    # Add SSH key (replace with your key path if different)
-    ssh-add ~/.ssh/id_ed25519 >/dev/null 2>&1
-  fi
-}
-
-# Run the function automatically when Zsh starts
-ensure_ssh_agent
 ########################################
 # End of ~/.zshrc
 ########################################
