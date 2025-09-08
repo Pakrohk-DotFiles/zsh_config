@@ -99,13 +99,13 @@ Now, restart your terminal. The first time you launch ZSH, `znap` and `starship`
 
 ## 📦 Package Management Features
 
-Access package management utilities by running `pf` command:
+Access package management utilities by running the `pf` command. This provides an interactive `fzf`-based menu for the following actions:
 
-- Search and install packages
-- Remove packages
-- Clean orphaned packages
-- List explicit packages
-- List foreign (AUR) packages
+- **Search and install packages**: Search for packages from the official repositories and the AUR. The search is now more powerful and supports multiple keywords (e.g., a search for `linux zen` will find `linux-zen`).
+- **Remove packages**: Select one or more installed packages to remove.
+- **Clean orphaned packages**: Find and remove packages that are no longer required by any other package.
+- **List explicit packages**: View and manage packages that you have explicitly installed.
+- **List foreign (AUR) packages**: View and manage packages installed from the AUR or local files.
 
 ## ⚡ Performance Optimizations
 
