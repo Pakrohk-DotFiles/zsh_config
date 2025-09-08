@@ -1,9 +1,14 @@
 ########################################
 # ~/.zshrc - Complete ZSH Configuration
 ########################################
+
+# --- Centralized Config Path ---
+# All other config files are sourced from here.
+ZSH_CONFIG_DIR=~/.zsh_config
+
 ### --- Bootstrap Znap ---
-[[ -r ~/.zsh_config/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git ~/.zsh_config/znap
-source ~/.zsh_config/znap/znap.zsh
+[[ -r $ZSH_CONFIG_DIR/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git $ZSH_CONFIG_DIR/znap
+source $ZSH_CONFIG_DIR/znap/znap.zsh
 
 ########################################
 # ZSH Options
@@ -57,7 +62,7 @@ ENABLE_CORRECTION="true"
 ########################################
 # Prompt / Theme
 ########################################
-[ -f ~/.prompt.local ] && source ~/.prompt.local
+[ -f "$ZSH_CONFIG_DIR/.prompt.local" ] && source "$ZSH_CONFIG_DIR/.prompt.local"
 znap prompt
 
 ########################################
@@ -89,12 +94,12 @@ export LC_ALL="en_US.UTF-8"
 # Aliases & Functions
 ########################################
 # Keep the main config clean
-[ -f ~/.zsh_aliases ] && source ~/.zsh_aliases
+[ -f "$ZSH_CONFIG_DIR/.zsh_aliases" ] && source "$ZSH_CONFIG_DIR/.zsh_aliases"
 ########################################
 # External Configs
 ########################################
-[ -f ~/.zshrc.local ] && source ~/.zshrc.local
-[ -f ~/.paru_fzf.zsh ] && source ~/.paru_fzf.zsh
+[ -f "$ZSH_CONFIG_DIR/.zshrc.local" ] && source "$ZSH_CONFIG_DIR/.zshrc.local"
+[ -f "$ZSH_CONFIG_DIR/.paru_fzf.zsh" ] && source "$ZSH_CONFIG_DIR/.paru_fzf.zsh"
 
 # Dart completion
 [ -f ~/.config/.dart-cli-completion/zsh-config.zsh ] && source ~/.config/.dart-cli-completion/zsh-config.zsh
@@ -148,11 +153,10 @@ load_keys
 ########################################
 # Fallback for custom functions
 ########################################
-fpath+=~/.zfunc
+[ -d "$ZSH_CONFIG_DIR/.zfunc" ] && fpath+="$ZSH_CONFIG_DIR/.zfunc"
 autoload -Uz compinit
 compinit
 
 ########################################
 # End of ~/.zshrc
 ########################################
-

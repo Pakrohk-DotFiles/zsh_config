@@ -11,7 +11,7 @@ show_help() {
     echo "5. List Foreign (f)      : Show AUR/Local packages"
     echo -e "\nUsage Tips:"
     echo "- TAB to select multiple packages"
-    echo "- Start typing to search"
+    echo "- Start typing to search (e.g., 'linux zen' works)"
     echo "- Ctrl+C to cancel"
     echo "------------------------"
 }
@@ -24,17 +24,24 @@ confirm_action() {
     [[ "$REPLY" =~ ^[Yy]$ ]]
 }
 
+# Helper function for fzf reload to handle multi-word searches
+_pf_search() {
+    # $@ expands the query into separate arguments for paru/pacman
+    pacman -Ss $@; paru -Ssa $@ 2>/dev/null
+}
+export -f _pf_search
+
 # Function: Search & Install packages
 search_and_install() {
     local packages
+    # Initial list is empty, relying on `reload` to populate.
     packages=$(
-        (pacman -Ss; paru -Ssa 2>/dev/null) | \
-        grep -E "^[^ ]|^$" | \
-        fzf --prompt="Search packages: " \
+        echo "" | \
+        fzf --prompt="Search packages (e.g., 'linux zen'): " \
             --multi \
             --reverse \
             --preview 'package=$(echo {} | cut -d" " -f1 | cut -d"/" -f2); if [ -n "$package" ]; then paru -Si "$package" 2>/dev/null || pacman -Si "$package" 2>/dev/null; fi' \
-            --bind "change:reload(pacman -Ss {q}; paru -Ssa {q} 2>/dev/null)" \
+            --bind "change:reload(_pf_search {q})" \
             --header $'TAB to select multiple packages\nStart typing to search\nEnter to install' \
             --disabled | \
         cut -d' ' -f1 | cut -d'/' -f2
@@ -153,4 +160,3 @@ pf() {
         *) echo "Invalid choice. Exiting."; return 1 ;;
     esac
 }
-

@@ -36,40 +36,36 @@ dnf install zsh git curl
 git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
 ```
 
-2. Create symbolic links:
+2. Create a single symbolic link for the main ZSH configuration file:
 ```bash
 ln -sf ~/.zsh_config/.zshrc ~/.zshrc
-ln -sf ~/.zsh_config/.zshrc.local ~/.zshrc.local
-ln -sf ~/.zsh_config/.paru_fzf.zsh ~/.paru_fzf.zsh
-ln -sf ~/.zsh_config/.prompt.local ~/.prompt.local
-ln -sf ~/.zsh_config/.zsh_aliases ~/.zsh_aliases
 ```
 
-3. Set ZSH as default shell:
+3. Set ZSH as your default shell:
 ```bash
 chsh -s $(which zsh)
 ```
 
-The first time you run ZSH, `znap` and `starship` will be automatically installed.
+Now, restart your terminal. The first time you launch ZSH, `znap` and `starship` will be automatically installed. All other configuration files are sourced directly from `~/.zsh_config`, keeping your home directory clean.
 
 ## 🔧 Configuration Structure
 
 ```
 ~/.zsh_config/
-├── .zshrc           # Main configuration file
-├── .zshrc.local     # Local/machine-specific settings
-├── .prompt.local    # Starship prompt configuration and installation
-├── .zsh_aliases     # Collection of shell aliases and functions
-└── .paru_fzf.zsh    # Package management utilities
+├── .zshrc           # Main config file (symlinked to ~/.zshrc)
+├── .zshrc.local     # Local/machine-specific settings (sourced by .zshrc)
+├── .prompt.local    # Starship prompt setup (sourced by .zshrc)
+├── .zsh_aliases     # Custom aliases and functions (sourced by .zshrc)
+├── .paru_fzf.zsh    # Package management utilities (sourced by .zshrc)
+└── .zfunc/          # Directory for custom completion functions
 ```
 
 ### Main Components
 
 - **Base Configuration** (.zshrc)
-  - Shell options, history, and key bindings
-  - Completion system configuration
-  - Plugin management with Znap
-  - Sources external configuration files
+  - The only file that needs to be symlinked to your home directory.
+  - Sets shell options, history, and key bindings.
+  - Initializes the plugin manager and sources all other configuration files from `~/.zsh_config`.
 
 - **Prompt Configuration** (.prompt.local)
   - Ensures Starship is installed
@@ -103,13 +99,13 @@ The first time you run ZSH, `znap` and `starship` will be automatically installe
 
 ## 📦 Package Management Features
 
-Access package management utilities by running `pf` command:
+Access package management utilities by running the `pf` command. This provides an interactive `fzf`-based menu for the following actions:
 
-- Search and install packages
-- Remove packages
-- Clean orphaned packages
-- List explicit packages
-- List foreign (AUR) packages
+- **Search and install packages**: Search for packages from the official repositories and the AUR. The search is now more powerful and supports multiple keywords (e.g., a search for `linux zen` will find `linux-zen`).
+- **Remove packages**: Select one or more installed packages to remove.
+- **Clean orphaned packages**: Find and remove packages that are no longer required by any other package.
+- **List explicit packages**: View and manage packages that you have explicitly installed.
+- **List foreign (AUR) packages**: View and manage packages installed from the AUR or local files.
 
 ## ⚡ Performance Optimizations
 
@@ -147,11 +143,13 @@ The configuration automatically manages an `ssh-agent` instance for you:
 - `softar`: Remove orphaned packages.
 - `rebuild_system`: Rebuild initramfs and GRUB.
 
-### Global Aliases
-- `G`: Pipe to `grep` (e.g., `ps aux G zsh`).
-- `H`: Pipe to `head`.
-- `T`: Pipe to `tail`.
-- `L`: Pipe to `less`.
+### Aliases
+- `upk`: Rebuild kernel images (`sudo mkinitcpio -P`).
+- `upg`: Update GRUB configuration (`sudo grub-mkconfig ...`).
+- `G`: Global alias for `| grep` (e.g., `ps aux G zsh`).
+- `H`: Global alias for `| head`.
+- `T`: Global alias for `| tail`.
+- `L`: Global alias for `| less`.
 
 ## 💻 Server-Specific Considerations
 
