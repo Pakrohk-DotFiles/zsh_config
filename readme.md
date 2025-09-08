@@ -143,11 +143,13 @@ The configuration automatically manages an `ssh-agent` instance for you:
 - `softar`: Remove orphaned packages.
 - `rebuild_system`: Rebuild initramfs and GRUB.
 
-### Global Aliases
-- `G`: Pipe to `grep` (e.g., `ps aux G zsh`).
-- `H`: Pipe to `head`.
-- `T`: Pipe to `tail`.
-- `L`: Pipe to `less`.
+### Aliases
+- `upk`: Rebuild kernel images (`sudo mkinitcpio -P`).
+- `upg`: Update GRUB configuration (`sudo grub-mkconfig ...`).
+- `G`: Global alias for `| grep` (e.g., `ps aux G zsh`).
+- `H`: Global alias for `| head`.
+- `T`: Global alias for `| tail`.
+- `L`: Global alias for `| less`.
 
 ## 💻 Server-Specific Considerations
 
