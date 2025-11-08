@@ -1,17 +1,17 @@
 # Enhanced ZSH Configuration
 
-A powerful and modular ZSH configuration setup focused on productivity and user experience. Works seamlessly across both desktop and server environments.
+> A powerful, modular, and performance-optimized Zsh configuration designed for developers and power users.
 
-## ✨ Features
+This project provides a comprehensive Zsh setup that balances rich features with a fast and responsive shell experience. It is built to be easily customizable and works seamlessly across both desktop and server environments. The configuration is kept clean and organized by sourcing modular files from a central directory (`~/.zsh_config`), ensuring your home directory remains uncluttered.
 
-- Fast and responsive shell experience with Starship and Znap
-- Comprehensive plugin management using Znap
-- Intelligent command completion system
-- History management with duplicate prevention
-- Package management utilities for Arch Linux systems
-- Command suggestion and syntax highlighting
-- Directory bookmarking and quick navigation
-- Rust development environment support
+## ✨ Core Features
+
+- **Fast & Responsive:** Utilizes `zsh-snap` (znap) for efficient plugin management and instant prompt loading.
+- **Powerful Prompt:** A feature-rich and informative prompt powered by [Starship](https://starship.rs/).
+- **Intelligent Completions:** Advanced command completion system with auto-suggestions and syntax highlighting.
+- **Efficient Workflow:** A curated collection of aliases, functions, and plugins to streamline common tasks.
+- **Arch-Focused Tools:** Includes a powerful `fzf`-based package manager for Arch Linux users.
+- **Clean & Organized:** A modular structure that is easy to manage and customize.
 
 ## 🚀 Installation
 
@@ -59,138 +59,79 @@ sudo pacman -S python-virtualenvwrapper
 
 ### Setup Steps
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
+    ```
 
-2. Create a single symbolic link for the main ZSH configuration file:
-```bash
-ln -sf ~/.zsh_config/.zshrc ~/.zshrc
-```
+2.  **Create the symbolic link:**
+    ```bash
+    ln -sf ~/.zsh_config/.zshrc ~/.zshrc
+    ```
 
-3. Set ZSH as your default shell:
-```bash
-chsh -s $(which zsh)
-```
+3.  **Set Zsh as your default shell:**
+    ```bash
+    chsh -s $(which zsh)
+    ```
 
-Now, restart your terminal. The first time you launch ZSH, `znap` and `starship` will be automatically installed. All other configuration files are sourced directly from `~/.zsh_config`, keeping your home directory clean.
+Now, restart your terminal. The first time you launch Zsh, `znap` and `starship` will be automatically installed.
 
-## 🔧 Configuration Structure
+## 🔧 Configuration Deep Dive
 
-```
-~/.zsh_config/
-├── .zshrc           # Main config file (symlinked to ~/.zshrc)
-├── .zshrc.local     # Local/machine-specific settings (sourced by .zshrc)
-├── .prompt.local    # Starship prompt setup (sourced by .zshrc)
-├── .zsh_aliases     # Custom aliases and functions (sourced by .zshrc)
-├── .paru_fzf.zsh    # Package management utilities (sourced by .zshrc)
-└── .zfunc/          # Directory for custom completion functions
-```
+The configuration is split into several files, each with a specific purpose. All files are located in `~/.zsh_config`.
 
-### Main Components
+-   `.zshrc`: The main entry point. It handles `znap` bootstrapping, sets core Zsh options, and sources all other configuration files. This is the **only** file that needs to be symlinked to your home directory.
+-   `.prompt.local`: Manages the Starship prompt. It ensures Starship is installed and generates a default `starship.toml` configuration if one doesn't exist.
+-   `.zsh_aliases`: Contains a curated set of aliases and shell functions to simplify common commands and workflows. See the "Aliases and Functions" section below for details.
+-   `.paru_fzf.zsh`: Implements the interactive package management function (`pf`) for Arch Linux.
+-   `.zshrc.local`: An optional file for your private, machine-specific settings (e.g., environment variables with sensitive keys). It is sourced by `.zshrc` if it exists.
 
-- **Base Configuration** (.zshrc)
-  - The only file that needs to be symlinked to your home directory.
-  - Sets shell options, history, and key bindings.
-  - Initializes the plugin manager and sources all other configuration files from `~/.zsh_config`.
+### Aliases and Functions (`.zsh_aliases`)
 
-- **Prompt Configuration** (.prompt.local)
-  - Ensures Starship is installed
-  - Initializes the Starship prompt
-  - Creates a default `starship.toml` if none exists
+This file is the heart of the workflow enhancements. Here are some of the key helpers available:
 
-- **Local Configuration** (.zshrc.local)
-  - Machine-specific environment variables and settings
-  - Can be used to override default settings
+| Command                             | Description                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| **Navigation**                      |                                                                          |
+| `mkcd <dir>`                        | Creates a directory and immediately `cd`'s into it.                      |
+| `cdf`                               | Uses `fzf` to fuzzy-find a subdirectory and `cd` into it.                |
+| `up <n>`                            | Navigates up `n` parent directories (e.g., `up 3`).                      |
+| **System Maintenance (Arch)**       |                                                                          |
+| `softar`                            | Safely removes all orphaned packages.                                    |
+| `rebuild_system`                    | Rebuilds the initramfs and GRUB configuration in one go.                 |
+| `reflectmirrors [countries]`        | Refreshes Arch Linux mirrors, sorting by speed (e.g., `reflectmirrors "Germany,France"`). |
+| **Utilities**                       |                                                                          |
+| `extract <file>`                    | Extracts any common archive type (`.zip`, `.tar.gz`, `.rar`, etc.).       |
+| `cheat <cmd> <term>`                | Searches the man page of `<cmd>` for a specific `<term>`.                |
+| `refonts`                           | Force-refreshes the system's font cache.                                 |
+| **Global Aliases**                  |                                                                          |
+| `G`                                 | Global alias for `| grep`. Example: `ps aux G zsh`                       |
+| `H` / `T` / `L`                     | Global aliases for piping to `head`, `tail`, or `less`.                  |
 
-- **Aliases and Functions** (.zsh_aliases)
-  - Contains shortcuts, system maintenance functions, and navigation helpers
+### Package Management (`pf`)
 
-- **Package Management** (.paru_fzf.zsh)
-  - Interactive package management interface
-  - Fuzzy search capabilities
-  - System maintenance utilities
+Run the `pf` command to open an interactive `fzf` menu for managing your Arch Linux packages. It allows you to:
+-   **Search and install packages** from both the official repositories and the AUR.
+-   **Remove packages** that are currently installed.
+-   **Clean orphaned packages** to free up disk space.
+-   **List explicitly installed** or **foreign (AUR)** packages.
 
-## 🔌 Included Plugins
+### SSH Agent Management
 
-- `fast-syntax-highlighting`: Real-time command syntax highlighting
-- `zsh-autosuggestions`: Fish-like command suggestions
-- `zsh-completions`: Additional completion definitions
-- `z`: Quick directory jumping
-- `wd`: Directory bookmarking
-- `git`: Enhanced Git integration
-- `colored-man-pages`: Colorized man pages
-- `virtualenvwrapper`: Python virtual environment management
-- `alias-tips`: Reminds you when you forget to use an alias
-- `zcolors`: Provides colorized `ls` output
+The configuration includes a robust script to automatically manage an `ssh-agent` instance.
+-   The agent is started on your first Zsh session.
+-   The agent's environment is saved and reused across all subsequent shell sessions.
+-   It automatically loads your `~/.ssh/id_ed25519` key, so you only need to enter your passphrase once per session.
 
-## 📦 Package Management Features
+## 🔌 Plugins
 
-Access package management utilities by running the `pf` command. This provides an interactive `fzf`-based menu for the following actions:
-
-- **Search and install packages**: Search for packages from the official repositories and the AUR. The search is now more powerful and supports multiple keywords (e.g., a search for `linux zen` will find `linux-zen`).
-- **Remove packages**: Select one or more installed packages to remove.
-- **Clean orphaned packages**: Find and remove packages that are no longer required by any other package.
-- **List explicit packages**: View and manage packages that you have explicitly installed.
-- **List foreign (AUR) packages**: View and manage packages installed from the AUR or local files.
-
-## ⚡ Performance Optimizations
-
-- Lazy loading of completions
-- Instant prompt configuration
-- Efficient plugin management with Znap
-- Optimized completion system
-
-## 🔐 SSH Agent Management
-
-The configuration automatically manages an `ssh-agent` instance for you:
-- The agent is started on your first ZSH session.
-- The agent's environment is saved and reused across all subsequent shell sessions.
-- It automatically loads your `~/.ssh/id_ed25519` key, so you only need to enter your passphrase once.
-
-## 🛠 Customization
-
-1. **Local Settings**: Machine-specific configurations can be added to `.zshrc.local`.
-2. **Aliases**: Additional aliases and functions can be defined in `.zsh_aliases`.
-3. **Prompt**: The Starship prompt can be configured by editing `~/.config/starship.toml`. If this file doesn't exist, it will be created with a default configuration the first time you start ZSH. You can learn more about configuring Starship in the [official documentation](https://starship.rs/config/).
-
-## 🔍 Useful Commands & Aliases
-
-### Functions
-- `mkcd <dir>`: Create a directory and enter it.
-- `cdf`: Fuzzy search for a subdirectory and `cd` into it.
-- `up <n>`: Go up `n` parent directories.
-- `extract <file>`: Extract common archive types.
-- `cheat <cmd> <term>`: Search the man page of `<cmd>` for `<term>`.
-- `AReboot`: Restart the Pipewire audio system.
-- `DAReboot`: Restart Discord and the audio system.
-- `reflectmirrors [countries]`: Refresh Arch Linux mirrors (e.g., `reflectmirrors "United States,Germany"`).
-- `repack_arch`: Reinstall all native packages from repositories.
-- `refonts`: Refresh the system's font cache.
-- `softar`: Remove orphaned packages.
-- `rebuild_system`: Rebuild initramfs and GRUB.
-
-### Aliases
-- `upk`: Rebuild kernel images (`sudo mkinitcpio -P`).
-- `upg`: Update GRUB configuration (`sudo grub-mkconfig ...`).
-- `G`: Global alias for `| grep` (e.g., `ps aux G zsh`).
-- `H`: Global alias for `| head`.
-- `T`: Global alias for `| tail`.
-- `L`: Global alias for `| less`.
-
-## 💻 Server-Specific Considerations
-
-For server environments:
-- The Starship prompt automatically adjusts for non-GUI environments
-- Package management features work with basic package managers
-- Performance optimizations help with remote connections
-- No GUI-dependent features are required
+This setup uses a minimal but powerful set of plugins, all loaded via `znap`:
+-   `fast-syntax-highlighting`: Provides real-time syntax highlighting for commands.
+-   `zsh-autosuggestions`: Suggests commands as you type based on your history.
+-   `zsh-completions`: Provides additional completion definitions for many common tools.
+-   `z`: Allows you to jump to your most frequently used directories.
+-   And several others for git integration, colored man pages, and more.
 
 ## 📝 License
 
-MIT License - feel free to use and modify as needed.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+This project is licensed under the MIT License. Feel free to use, modify, and distribute it as you see fit.
