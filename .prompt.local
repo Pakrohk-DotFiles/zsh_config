@@ -30,29 +30,35 @@ if [[ ! -f "$STARSHIP_CONF" ]]; then
   mkdir -p "$(dirname "$STARSHIP_CONF")"
   cat > "$STARSHIP_CONF" <<'TOML'
 # ~/.config/starship.toml
-# Optimized prompt: Line 1 (empty), Line 2 (user@host -> dir git cmd_duration rprompt), Line 3 (lambda)
+# Prompt: Line 1 (empty), Line 2 (user@host -> dir git cmd_duration), Line 3 (lambda with space)
 
 add_newline = true
-command_timeout = 500
+command_timeout = 2000
 
 # Prompt format
-format = """
-${custom.userinfo}$directory$git_status($git_branch) $cmd_duration $custom.rprompt
+format = """$python$rust$golang$nodejs${custom.userinfo}$directory$git_status($git_branch) $cmd_duration
 $character
 """
 
-[custom.userinfo]
-command = "printf '%s@%s -> ' \"$USER\" \"${HOSTNAME:-$(uname -n)}\""
-format = "[$output](bold 242)"
-style = "bold 242"
+[python]
+format = "([$symbol($virtualenv)]($style) )"
+style = "bold yellow"
 
-[custom.rprompt]
-command = """
-  local venv=''
-  [[ -n $VIRTUAL_ENV ]] && venv=\"🐍 $(basename "$VIRTUAL_ENV") \"
-  printf '%s%s' "$venv" "$(date +%H:%M:%S)"
-"""
-format = "[$output](bold 242)"
+[rust]
+format = "([$symbol($version)]($style) )"
+style = "bold red"
+
+[golang]
+format = "([$symbol($version)]($style) )"
+style = "bold cyan"
+
+[nodejs]
+format = "([$symbol($version)]($style) )"
+style = "bold green"
+
+[custom.userinfo]
+command = "printf '%s@%s -> ' \"$USER\" \"$(uname -n)\""
+when = "true"
 style = "bold 242"
 
 [directory]
@@ -81,7 +87,7 @@ renamed = "➜($count)"
 deleted = "🗑($count)"
 
 [cmd_duration]
-min_time = 500
+min_time = 2000
 format = "[ ⏱ took $duration](bold green)"
 style = "bold green"
 
@@ -93,4 +99,3 @@ format = "$symbol "
 TOML
   echo "[prompt] Created $STARSHIP_CONF"
 fi
-
