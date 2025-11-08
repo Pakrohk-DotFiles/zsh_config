@@ -17,16 +17,44 @@ A powerful and modular ZSH configuration setup focused on productivity and user 
 
 ### Prerequisites
 
+**Note:** This configuration is primarily designed for **Arch Linux**. While it can be adapted for other distributions, the package management functions and some aliases will require modification.
+
+#### Core Requirements
+These packages are essential for the basic functionality of the shell configuration.
 ```bash
-# Install required packages
-# For Arch Linux
-pacman -S zsh git curl
+# The shell itself, a tool for cloning, and a tool for downloading installers
+sudo pacman -S zsh git curl
+```
 
-# For Debian/Ubuntu
-apt install zsh git curl
+#### For Package Management (`pf` command)
+These are required for the interactive package management script.
+```bash
+# A command-line fuzzy finder
+sudo pacman -S fzf
 
-# For RHEL/CentOS
-dnf install zsh git curl
+# An AUR helper is required for the 'pf' script.
+# This config uses 'paru', but you can adapt the script for another.
+# To install 'paru' from the AUR:
+git clone https://aur.archlinux.org/paru.git
+cd paru
+makepkg -si
+```
+
+#### For Full Alias & Function Support
+These packages enable various helper functions and aliases found in the `.zsh_aliases` file.
+```bash
+sudo pacman -S reflector p7zip unzip z
+```
+- `reflector`: Used by the `reflectmirrors` function.
+- `p7zip`: Used by the `extract` function for `.7z` files.
+- `unzip`: Used by the `extract` function for `.zip` files.
+- `z`: Required for the `z` command (directory jumping).
+
+#### Optional (for Python Development)
+This is only needed if you work with Python virtual environments.
+```bash
+# Required for the virtualenvwrapper plugin
+sudo pacman -S python-virtualenvwrapper
 ```
 
 ### Setup Steps
