@@ -22,14 +22,24 @@ The easiest way to install this configuration is using the provided automated in
 Run the following command in your terminal:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh-config/main/install.sh | bash
+# For a standard installation (will prompt for mode)
+curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.sh | bash
 ```
 
 The installer will:
 1. Detect your Operating System.
 2. Ask you to choose between **Desktop/Personal** or **Server** mode.
+   - **Root User:** If running as root, Server mode is enforced automatically.
 3. Automatically install necessary dependencies.
+   - **Server Mode:** Only essential tools (`zsh`, `git`, `curl`) are installed.
 4. Set up the configuration and symbolic links.
+
+### Security on Servers
+
+This configuration is designed with security in mind for server environments:
+- **No SSH Agent:** Automatic `ssh-agent` management and key loading are disabled on servers to prevent socket exposure.
+- **Minimal Plugins:** Only essential plugins like syntax highlighting and autosuggestions are loaded.
+- **Minimal Dependencies:** GUI-related tools and AUR helpers are not installed or configured.
 
 ### Manual Installation
 
@@ -77,7 +87,7 @@ sudo pacman -S python-virtualenvwrapper
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
+    git clone https://github.com/Pakrohk-DotFiles/zsh_config.git ~/.zsh_config
     ```
 
 2.  **Create the symbolic link:**
