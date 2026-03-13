@@ -84,6 +84,11 @@ znap source zsh-users/zsh-autosuggestions
 znap source ohmyzsh/ohmyzsh plugins/git
 znap source ohmyzsh/ohmyzsh plugins/colored-man-pages
 
+# Server-specific network plugins
+if [[ "$ZSH_ENV_TYPE" == "server" ]]; then
+    znap source ohmyzsh/ohmyzsh plugins/network
+fi
+
 # Load heavier/non-essential plugins only on Desktop
 if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
     znap source marlonrichert/zcolors
@@ -102,9 +107,14 @@ fi
 # Environment
 ########################################
 # Defaults (will be overridden by .zshrc.local if it exists)
-export EDITOR='nvim'
-export BROWSER='firefox'
-export TERMINAL='kitty'
+if command -v nvim >/dev/null 2>&1; then
+    export EDITOR='nvim'
+else
+    export EDITOR='vim'
+fi
+
+export BROWSER='echo'
+export TERMINAL='xterm'
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 
