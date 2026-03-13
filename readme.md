@@ -23,7 +23,7 @@ Run the following command in your terminal:
 
 ```bash
 # For a standard installation (will prompt for mode)
-curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh-config/refs/heads/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.sh | bash
 ```
 
 The installer will:
@@ -87,7 +87,7 @@ sudo pacman -S python-virtualenvwrapper
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/Pakrohk-DotFiles/zsh-config.git ~/.zsh_config
+    git clone https://github.com/Pakrohk-DotFiles/zsh_config.git ~/.zsh_config
     ```
 
 2.  **Create the symbolic link:**

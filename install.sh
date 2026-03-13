@@ -107,7 +107,7 @@ esac
 
 # 4. Clone or Update Configuration
 ZSH_CONFIG_DIR="$HOME/.zsh_config"
-REPO_URL="https://github.com/Pakrohk-DotFiles/zsh-config.git"
+REPO_URL="https://github.com/Pakrohk-DotFiles/zsh_config.git"
 
 if [ -d "$ZSH_CONFIG_DIR" ]; then
     echo -e "${YELLOW}[*] Configuration already exists at $ZSH_CONFIG_DIR. Updating...${NC}"
