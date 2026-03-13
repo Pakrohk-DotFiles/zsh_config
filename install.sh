@@ -95,11 +95,12 @@ case $OS in
         fi
         ;;
     "Debian/Ubuntu")
+        export DEBIAN_FRONTEND=noninteractive
         $SUDO_CMD apt-get update
         if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD apt-get install -y zsh git curl nload iftop nmap iperf3 tcpdump mtr-tiny duf
+            $SUDO_CMD apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" zsh git curl nload iftop nmap iperf3 tcpdump mtr-tiny duf
         else
-            $SUDO_CMD apt-get install -y zsh git curl fzf
+            $SUDO_CMD apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" zsh git curl fzf
         fi
 
         if [[ "$MODE" == "Desktop" ]]; then
