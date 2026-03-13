@@ -84,6 +84,7 @@ znap eval zcolors "zcolors ${(q)LS_COLORS}"
 ########################################
 # Environment
 ########################################
+# Defaults (will be overridden by .zshrc.local if it exists)
 export EDITOR='nvim'
 export BROWSER='firefox'
 export TERMINAL='kitty'
@@ -91,15 +92,24 @@ export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 
 ########################################
+# External Configs & Overrides
+########################################
+# Load local overrides first to allow environment customization
+[ -f "$ZSH_CONFIG_DIR/.zshrc.local" ] && source "$ZSH_CONFIG_DIR/.zshrc.local"
+
+########################################
 # Aliases & Functions
 ########################################
 # Keep the main config clean
 [ -f "$ZSH_CONFIG_DIR/.zsh_aliases" ] && source "$ZSH_CONFIG_DIR/.zsh_aliases"
+
 ########################################
-# External Configs
+# Conditional loading based on environment
 ########################################
-[ -f "$ZSH_CONFIG_DIR/.zshrc.local" ] && source "$ZSH_CONFIG_DIR/.zshrc.local"
-[ -f "$ZSH_CONFIG_DIR/.paru_fzf.zsh" ] && source "$ZSH_CONFIG_DIR/.paru_fzf.zsh"
+# Only load paru/fzf helper on Desktop environments
+if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
+    [ -f "$ZSH_CONFIG_DIR/.paru_fzf.zsh" ] && source "$ZSH_CONFIG_DIR/.paru_fzf.zsh"
+fi
 
 # Dart completion
 [ -f ~/.config/.dart-cli-completion/zsh-config.zsh ] && source ~/.config/.dart-cli-completion/zsh-config.zsh
@@ -147,8 +157,10 @@ if [[ -z "$SSH_AUTH_SOCK" ]] || ! kill -0 "$SSH_AGENT_PID" >/dev/null 2>&1; then
     start_agent
 fi
 
-# Load keys only if necessary
-load_keys
+# Load keys only if necessary and NOT on a server (security preference)
+if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
+    load_keys
+fi
 
 ########################################
 # Fallback for custom functions

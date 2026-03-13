@@ -15,7 +15,23 @@ This project provides a comprehensive Zsh setup that balances rich features with
 
 ## 🚀 Installation
 
-### Prerequisites
+The easiest way to install this configuration is using the provided automated installer.
+
+### Quick Install (Recommended)
+
+Run the following command in your terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh-config/main/install.sh | bash
+```
+
+The installer will:
+1. Detect your Operating System.
+2. Ask you to choose between **Desktop/Personal** or **Server** mode.
+3. Automatically install necessary dependencies.
+4. Set up the configuration and symbolic links.
+
+### Manual Installation
 
 **Note:** This configuration is primarily designed for **Arch Linux**. While it can be adapted for other distributions, the package management functions and some aliases will require modification.
 
