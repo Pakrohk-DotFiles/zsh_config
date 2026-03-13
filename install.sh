@@ -29,27 +29,44 @@ fi
 echo -e "${BLUE}[*] OS Detected: ${YELLOW}$OS${NC}"
 
 # 2. Choose Mode
-echo -e "${YELLOW}Select Installation Mode:${NC}"
-echo -e "1) ${GREEN}Desktop/Personal${NC} (Full features, includes AUR helpers and desktop tools)"
-echo -e "2) ${GREEN}Server${NC} (Minimal, focused on stability and security)"
-read -p "Enter choice [1-2]: " mode_choice
-
-if [[ "$mode_choice" == "1" ]]; then
-    MODE="Desktop"
-else
+if [[ "$EUID" -eq 0 ]]; then
+    echo -e "${RED}[!] Running as root detected.${NC}"
+    echo -e "${YELLOW}Server/Root mode will be enforced for security.${NC}"
     MODE="Server"
+else
+    echo -e "${YELLOW}Select Installation Mode:${NC}"
+    echo -e "1) ${GREEN}Desktop/Personal${NC} (Full features, includes AUR helpers and desktop tools)"
+    echo -e "2) ${GREEN}Server${NC} (Minimal, focused on stability and security)"
+    read -p "Enter choice [1-2]: " mode_choice < /dev/tty
+
+    if [[ "$mode_choice" == "1" ]]; then
+        MODE="Desktop"
+    else
+        MODE="Server"
+    fi
 fi
 echo -e "${BLUE}[*] Mode Selected: ${YELLOW}$MODE${NC}"
 
 # 3. Install Core Dependencies
 echo -e "${BLUE}[*] Installing core dependencies...${NC}"
 
+# Define sudo command
+SUDO_CMD=""
+if command -v sudo >/dev/null 2>&1; then
+    SUDO_CMD="sudo"
+fi
+
 case $OS in
     "Arch")
-        sudo pacman -Sy --needed --noconfirm zsh git curl fzf
+        if [[ "$MODE" == "Server" ]]; then
+            $SUDO_CMD pacman -Sy --needed --noconfirm zsh git curl
+        else
+            $SUDO_CMD pacman -Sy --needed --noconfirm zsh git curl fzf
+        fi
+
         if [[ "$MODE" == "Desktop" ]]; then
             echo -e "${BLUE}[*] Installing Desktop-specific dependencies (Arch)...${NC}"
-            sudo pacman -S --needed --noconfirm base-devel reflector p7zip unzip z python-virtualenvwrapper
+            $SUDO_CMD pacman -S --needed --noconfirm base-devel reflector p7zip unzip python-virtualenvwrapper
 
             if ! command -v paru &> /dev/null; then
                 echo -e "${YELLOW}[!] Paru (AUR helper) not found. Installing...${NC}"
@@ -60,16 +77,26 @@ case $OS in
         fi
         ;;
     "Debian/Ubuntu")
-        sudo apt-get update
-        sudo apt-get install -y zsh git curl fzf
+        $SUDO_CMD apt-get update
+        if [[ "$MODE" == "Server" ]]; then
+            $SUDO_CMD apt-get install -y zsh git curl
+        else
+            $SUDO_CMD apt-get install -y zsh git curl fzf
+        fi
+
         if [[ "$MODE" == "Desktop" ]]; then
-            sudo apt-get install -y p7zip-full unzip
+            $SUDO_CMD apt-get install -y p7zip-full unzip
         fi
         ;;
     "Fedora")
-        sudo dnf install -y zsh git curl fzf
+        if [[ "$MODE" == "Server" ]]; then
+            $SUDO_CMD dnf install -y zsh git curl
+        else
+            $SUDO_CMD dnf install -y zsh git curl fzf
+        fi
+
         if [[ "$MODE" == "Desktop" ]]; then
-            sudo dnf install -y p7zip unzip
+            $SUDO_CMD dnf install -y p7zip unzip
         fi
         ;;
     *)

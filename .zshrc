@@ -6,6 +6,17 @@
 # All other config files are sourced from here.
 ZSH_CONFIG_DIR=~/.zsh_config
 
+########################################
+# External Configs & Overrides (Priority)
+########################################
+# Load local overrides early to set environment type
+[ -f "$ZSH_CONFIG_DIR/.zshrc.local" ] && source "$ZSH_CONFIG_DIR/.zshrc.local"
+
+# Force server mode if running as root
+if [[ "$EUID" -eq 0 ]]; then
+    export ZSH_ENV_TYPE='server'
+fi
+
 ### --- Bootstrap Znap ---
 [[ -r $ZSH_CONFIG_DIR/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git $ZSH_CONFIG_DIR/znap
 source $ZSH_CONFIG_DIR/znap/znap.zsh
@@ -70,16 +81,22 @@ znap prompt
 ########################################
 znap source zdharma-continuum/fast-syntax-highlighting
 znap source zsh-users/zsh-autosuggestions
-znap source marlonrichert/zcolors
-znap source mfaerevaag/wd
 znap source ohmyzsh/ohmyzsh plugins/git
-znap source djui/alias-tips
 znap source ohmyzsh/ohmyzsh plugins/colored-man-pages
-znap source ohmyzsh/ohmyzsh plugins/virtualenvwrapper
-znap source rupa/z
 
-# Evaluate zcolors
-znap eval zcolors "zcolors ${(q)LS_COLORS}"
+# Load heavier/non-essential plugins only on Desktop
+if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
+    znap source marlonrichert/zcolors
+    znap source mfaerevaag/wd
+    znap source djui/alias-tips
+    znap source ohmyzsh/ohmyzsh plugins/virtualenvwrapper
+    znap source rupa/z
+fi
+
+# Evaluate zcolors (if loaded)
+if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
+    znap eval zcolors "zcolors ${(q)LS_COLORS}"
+fi
 
 ########################################
 # Environment
@@ -91,11 +108,6 @@ export TERMINAL='kitty'
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 
-########################################
-# External Configs & Overrides
-########################################
-# Load local overrides first to allow environment customization
-[ -f "$ZSH_CONFIG_DIR/.zshrc.local" ] && source "$ZSH_CONFIG_DIR/.zshrc.local"
 
 ########################################
 # Aliases & Functions
@@ -124,7 +136,10 @@ fi
 # - Starts ssh-agent if not already running
 # - Reuses environment across sessions
 # - Loads key only once to avoid repeated passphrase prompts
+# DISABLED on Server for security
 ########################################
+
+if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
 
 SSH_ENV="$HOME/.ssh/agent-environment"
 
@@ -157,10 +172,10 @@ if [[ -z "$SSH_AUTH_SOCK" ]] || ! kill -0 "$SSH_AGENT_PID" >/dev/null 2>&1; then
     start_agent
 fi
 
-# Load keys only if necessary and NOT on a server (security preference)
-if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
-    load_keys
-fi
+# Load keys only if necessary
+load_keys
+
+fi # End of SSH Agent check
 
 ########################################
 # Fallback for custom functions
