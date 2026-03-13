@@ -23,7 +23,7 @@ Run the following command in your terminal:
 
 ```bash
 # For a standard installation (will prompt for mode)
-curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh-config/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh-config/refs/heads/main/install.sh | bash
 ```
 
 The installer will:
