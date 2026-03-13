@@ -107,15 +107,17 @@ fi
 ########################################
 # Environment
 ########################################
-# Defaults (will be overridden by .zshrc.local if it exists)
-if command -v nvim >/dev/null 2>&1; then
-    export EDITOR='nvim'
-else
-    export EDITOR='vim'
+# Defaults (only if not already set by .zshrc.local)
+if [[ -z "$EDITOR" ]]; then
+    if command -v nvim >/dev/null 2>&1; then
+        export EDITOR='nvim'
+    else
+        export EDITOR='vim'
+    fi
 fi
 
-export BROWSER='echo'
-export TERMINAL='xterm'
+[[ -z "$BROWSER" ]] && export BROWSER='echo'
+[[ -z "$TERMINAL" ]] && export TERMINAL='xterm'
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 

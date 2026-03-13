@@ -29,20 +29,38 @@ fi
 echo -e "${BLUE}[*] OS Detected: ${YELLOW}$OS${NC}"
 
 # 2. Choose Mode
-if [[ "$EUID" -eq 0 ]]; then
-    echo -e "${RED}[!] Running as root detected.${NC}"
-    echo -e "${YELLOW}Server/Root mode will be enforced for security.${NC}"
-    MODE="Server"
-else
-    echo -e "${YELLOW}Select Installation Mode:${NC}"
-    echo -e "1) ${GREEN}Desktop/Personal${NC} (Full features, includes AUR helpers and desktop tools)"
-    echo -e "2) ${GREEN}Server${NC} (Minimal, focused on stability and security)"
-    read -p "Enter choice [1-2]: " mode_choice < /dev/tty
+# Parse arguments
+for arg in "$@"; do
+    case $arg in
+        --desktop)
+            MODE="Desktop"
+            shift
+            ;;
+        --server)
+            MODE="Server"
+            shift
+            ;;
+    esac
+done
 
-    if [[ "$mode_choice" == "1" ]]; then
-        MODE="Desktop"
-    else
+if [[ -z "$MODE" ]]; then
+    if [[ "$EUID" -eq 0 ]]; then
+        echo -e "${RED}[!] Running as root detected.${NC}"
+        echo -e "${YELLOW}Server/Root mode will be enforced for security.${NC}"
         MODE="Server"
+    else
+        echo -e "${YELLOW}Select Installation Mode (Enter the number):${NC}"
+        echo -e "1) ${GREEN}Desktop/Personal${NC} (Full features, includes AUR helpers and desktop tools)"
+        echo -e "2) ${GREEN}Server${NC} (Minimal, focused on stability and security)"
+
+        while true; do
+            read -p "Selection [1 or 2]: " mode_choice < /dev/tty
+            case $mode_choice in
+                1) MODE="Desktop"; break ;;
+                2) MODE="Server"; break ;;
+                *) echo -e "${RED}Invalid choice. Please enter 1 or 2.${NC}" ;;
+            esac
+        done
     fi
 fi
 echo -e "${BLUE}[*] Mode Selected: ${YELLOW}$MODE${NC}"
@@ -77,11 +95,12 @@ case $OS in
         fi
         ;;
     "Debian/Ubuntu")
+        export DEBIAN_FRONTEND=noninteractive
         $SUDO_CMD apt-get update
         if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD apt-get install -y zsh git curl nload iftop nmap iperf3 tcpdump mtr-tiny duf
+            $SUDO_CMD apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" zsh git curl nload iftop nmap iperf3 tcpdump mtr-tiny duf
         else
-            $SUDO_CMD apt-get install -y zsh git curl fzf
+            $SUDO_CMD apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" zsh git curl fzf
         fi
 
         if [[ "$MODE" == "Desktop" ]]; then

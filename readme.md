@@ -22,8 +22,12 @@ The easiest way to install this configuration is using the provided automated in
 Run the following command in your terminal:
 
 ```bash
-# For a standard installation (will prompt for mode)
+# For a standard interactive installation
 curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.sh | bash
+
+# Non-interactive installation (choose your mode)
+curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.sh | bash -s -- --server
+curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.sh | bash -s -- --desktop
 ```
 
 The installer will:
