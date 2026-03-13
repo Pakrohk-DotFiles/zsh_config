@@ -59,7 +59,7 @@ fi
 case $OS in
     "Arch")
         if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD pacman -Sy --needed --noconfirm zsh git curl nload iftop nmap
+            $SUDO_CMD pacman -Sy --needed --noconfirm zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
         else
             $SUDO_CMD pacman -Sy --needed --noconfirm zsh git curl fzf
         fi
@@ -79,7 +79,7 @@ case $OS in
     "Debian/Ubuntu")
         $SUDO_CMD apt-get update
         if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD apt-get install -y zsh git curl nload iftop nmap
+            $SUDO_CMD apt-get install -y zsh git curl nload iftop nmap iperf3 tcpdump mtr-tiny duf
         else
             $SUDO_CMD apt-get install -y zsh git curl fzf
         fi
@@ -90,7 +90,7 @@ case $OS in
         ;;
     "Fedora")
         if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD dnf install -y zsh git curl nload iftop nmap
+            $SUDO_CMD dnf install -y zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
         else
             $SUDO_CMD dnf install -y zsh git curl fzf
         fi

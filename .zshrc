@@ -6,6 +6,11 @@
 # All other config files are sourced from here.
 ZSH_CONFIG_DIR=~/.zsh_config
 
+### --- Bootstrap Znap ---
+# This must happen before sourcing .zshrc.local if it uses znap
+[[ -r $ZSH_CONFIG_DIR/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git $ZSH_CONFIG_DIR/znap
+source $ZSH_CONFIG_DIR/znap/znap.zsh
+
 ########################################
 # External Configs & Overrides (Priority)
 ########################################
@@ -16,10 +21,6 @@ ZSH_CONFIG_DIR=~/.zsh_config
 if [[ "$EUID" -eq 0 ]]; then
     export ZSH_ENV_TYPE='server'
 fi
-
-### --- Bootstrap Znap ---
-[[ -r $ZSH_CONFIG_DIR/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git $ZSH_CONFIG_DIR/znap
-source $ZSH_CONFIG_DIR/znap/znap.zsh
 
 ########################################
 # ZSH Options
@@ -86,7 +87,7 @@ znap source ohmyzsh/ohmyzsh plugins/colored-man-pages
 
 # Server-specific network plugins
 if [[ "$ZSH_ENV_TYPE" == "server" ]]; then
-    znap source ohmyzsh/ohmyzsh plugins/network
+    znap source ohmyzsh/ohmyzsh plugins/nmap
 fi
 
 # Load heavier/non-essential plugins only on Desktop
@@ -135,6 +136,9 @@ fi
 
 # Dart completion
 [ -f ~/.config/.dart-cli-completion/zsh-config.zsh ] && source ~/.config/.dart-cli-completion/zsh-config.zsh
+
+# Background update check
+[ -f "$ZSH_CONFIG_DIR/.zsh_update.zsh" ] && source "$ZSH_CONFIG_DIR/.zsh_update.zsh"
 
 ########################################
 # Evals
