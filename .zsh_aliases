@@ -124,6 +124,16 @@ alias -g H='| head'                       # Quick pipe to head
 alias -g T='| tail'                       # Quick pipe to tail
 alias -g L='| less'                       # Quick pipe to less
 
+### --- Server/Utility Helpers ---
+# Get external IP
+alias myip='curl -s https://ifconfig.me'
+# Show listening ports
+alias ports='sudo lsof -i -P -n | grep LISTEN'
+# Modern disk usage (if available)
+if command -v duf >/dev/null 2>&1; then
+    alias df='duf'
+fi
+
 ########################################
 # End of ~/.zsh_aliases
 ########################################
