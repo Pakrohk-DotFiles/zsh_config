@@ -137,6 +137,9 @@ fi
 # Dart completion
 [ -f ~/.config/.dart-cli-completion/zsh-config.zsh ] && source ~/.config/.dart-cli-completion/zsh-config.zsh
 
+# Background update check
+[ -f "$ZSH_CONFIG_DIR/.zsh_update.zsh" ] && source "$ZSH_CONFIG_DIR/.zsh_update.zsh"
+
 ########################################
 # Evals
 ########################################

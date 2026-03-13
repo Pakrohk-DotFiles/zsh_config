@@ -134,6 +134,10 @@ if command -v duf >/dev/null 2>&1; then
     alias df='duf'
 fi
 
+# Simple Network Reaper / Monitor (if tools available)
+alias netmon='nload'
+alias netspect='iftop'
+
 ########################################
 # End of ~/.zsh_aliases
 ########################################
