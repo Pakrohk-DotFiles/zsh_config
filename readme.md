@@ -10,7 +10,8 @@ This project provides a comprehensive Zsh setup that balances rich features with
 - **Powerful Prompt:** A feature-rich and informative prompt powered by [Starship](https://starship.rs/).
 - **Intelligent Completions:** Advanced command completion system with auto-suggestions and syntax highlighting.
 - **Efficient Workflow:** A curated collection of aliases, functions, and plugins to streamline common tasks.
-- **Arch-Focused Tools:** Includes a powerful `fzf`-based package manager for Arch Linux users.
+- **Multi-OS & Cross-Platform:** Designed to run flawlessly on **Arch Linux, Debian/Ubuntu, Fedora, Alpine, openSUSE, and macOS** (latest version).
+- **Interactive Multi-OS Package Manager:** Includes a powerful `fzf`-based package manager (`pf` command) compatible with all major package managers (`pacman/paru`, `brew`, `apt`, `dnf`, `apk`, and `zypper`).
 - **Clean & Organized:** A modular structure that is easy to manage and customize.
 
 ## 🚀 Installation
@@ -47,45 +48,27 @@ This configuration is designed with security in mind for server environments:
 
 ### Manual Installation
 
-**Note:** This configuration is primarily designed for **Arch Linux**. While it can be adapted for other distributions, the package management functions and some aliases will require modification.
+This configuration supports multiple Operating Systems. You can install core and optional dependencies manually using your favorite package manager.
 
 #### Core Requirements
 These packages are essential for the basic functionality of the shell configuration.
-```bash
-# The shell itself, a tool for cloning, and a tool for downloading installers
-sudo pacman -S zsh git curl
-```
 
-#### For Package Management (`pf` command)
-These are required for the interactive package management script.
-```bash
-# A command-line fuzzy finder
-sudo pacman -S fzf
+- **Arch Linux:** `sudo pacman -S zsh git curl fzf`
+- **macOS:** `brew install zsh git curl fzf`
+- **Debian/Ubuntu:** `sudo apt install zsh git curl fzf`
+- **Fedora:** `sudo dnf install zsh git curl fzf`
+- **Alpine:** `sudo apk add zsh git curl fzf`
+- **openSUSE:** `sudo zypper install zsh git curl fzf`
 
-# An AUR helper is required for the 'pf' script.
-# This config uses 'paru', but you can adapt the script for another.
-# To install 'paru' from the AUR:
-git clone https://aur.archlinux.org/paru.git
-cd paru
-makepkg -si
-```
+#### Optional (for Full Alias, Function, & Extra Support)
+These packages enable additional features, extracting functions, and utilities:
 
-#### For Full Alias & Function Support
-These packages enable various helper functions and aliases found in the `.zsh_aliases` file.
-```bash
-sudo pacman -S reflector p7zip unzip z
-```
-- `reflector`: Used by the `reflectmirrors` function.
-- `p7zip`: Used by the `extract` function for `.7z` files.
-- `unzip`: Used by the `extract` function for `.zip` files.
-- `z`: Required for the `z` command (directory jumping).
-
-#### Optional (for Python Development)
-This is only needed if you work with Python virtual environments.
-```bash
-# Required for the virtualenvwrapper plugin
-sudo pacman -S python-virtualenvwrapper
-```
+- **Arch Linux:** `sudo pacman -S base-devel reflector p7zip unzip python-virtualenvwrapper` (Plus AUR helper `paru`)
+- **macOS:** `brew install p7zip unzip`
+- **Debian/Ubuntu:** `sudo apt install p7zip-full unzip`
+- **Fedora:** `sudo dnf install p7zip unzip`
+- **Alpine:** `sudo apk add p7zip unzip`
+- **openSUSE:** `sudo zypper install p7zip unzip`
 
 ### Setup Steps
 
@@ -113,7 +96,7 @@ The configuration is split into several files, each with a specific purpose. All
 -   `.zshrc`: The main entry point. It handles `znap` bootstrapping, sets core Zsh options, and sources all other configuration files. This is the **only** file that needs to be symlinked to your home directory.
 -   `.prompt.local`: Manages the Starship prompt. It ensures Starship is installed and generates a default `starship.toml` configuration if one doesn't exist.
 -   `.zsh_aliases`: Contains a curated set of aliases and shell functions to simplify common commands and workflows. See the "Aliases and Functions" section below for details.
--   `.paru_fzf.zsh`: Implements the interactive package management function (`pf`) for Arch Linux.
+-   `.paru_fzf.zsh`: Implements the interactive package management function (`pf`) for all supported operating systems and package managers.
 -   `.zshrc.local`: An optional file for your private, machine-specific settings (e.g., environment variables with sensitive keys). It is sourced by `.zshrc` if it exists.
 
 ### Aliases and Functions (`.zsh_aliases`)
@@ -140,11 +123,11 @@ This file is the heart of the workflow enhancements. Here are some of the key he
 
 ### Package Management (`pf`)
 
-Run the `pf` command to open an interactive `fzf` menu for managing your Arch Linux packages. It allows you to:
--   **Search and install packages** from both the official repositories and the AUR.
+Run the `pf` command to open an interactive `fzf` menu for managing your system packages. It automatically detects your package manager and allows you to:
+-   **Search and install packages** from the repositories.
 -   **Remove packages** that are currently installed.
 -   **Clean orphaned packages** to free up disk space.
--   **List explicitly installed** or **foreign (AUR)** packages.
+-   **List explicitly installed** or **foreign/extra** packages.
 
 ### SSH Agent Management
 

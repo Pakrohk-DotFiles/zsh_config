@@ -18,12 +18,18 @@ echo -e "${BLUE}==========================================${NC}"
 
 # 1. Detect OS
 OS="Unknown"
-if [ -f /etc/arch-release ]; then
+if [ "$(uname)" = "Darwin" ]; then
+    OS="macOS"
+elif [ -f /etc/arch-release ]; then
     OS="Arch"
 elif [ -f /etc/debian_version ]; then
     OS="Debian/Ubuntu"
 elif [ -f /etc/fedora-release ]; then
     OS="Fedora"
+elif [ -f /etc/alpine-release ]; then
+    OS="Alpine"
+elif [ -f /etc/suse-release ] || { [ -f /etc/os-release ] && grep -qi 'opensuse' /etc/os-release; }; then
+    OS="openSUSE"
 fi
 
 echo -e "${BLUE}[*] OS Detected: ${YELLOW}$OS${NC}"
@@ -75,6 +81,29 @@ if command -v sudo >/dev/null 2>&1; then
 fi
 
 case $OS in
+    "macOS")
+        # Ensure Homebrew is installed
+        if ! command -v brew &> /dev/null; then
+            echo -e "${YELLOW}[!] Homebrew not found. Installing Homebrew...${NC}"
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            # Add brew to PATH for current execution
+            if [ -f /opt/homebrew/bin/brew ]; then
+                eval "$(/opt/homebrew/bin/brew shellenv)"
+            elif [ -f /usr/local/bin/brew ]; then
+                eval "$(/usr/local/bin/brew shellenv)"
+            fi
+        fi
+
+        if [[ "$MODE" == "Server" ]]; then
+            brew install zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
+        else
+            brew install zsh git curl fzf
+        fi
+
+        if [[ "$MODE" == "Desktop" ]]; then
+            brew install p7zip unzip
+        fi
+        ;;
     "Arch")
         if [[ "$MODE" == "Server" ]]; then
             $SUDO_CMD pacman -Sy --needed --noconfirm zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
@@ -116,6 +145,29 @@ case $OS in
 
         if [[ "$MODE" == "Desktop" ]]; then
             $SUDO_CMD dnf install -y p7zip unzip
+        fi
+        ;;
+    "Alpine")
+        $SUDO_CMD apk update
+        if [[ "$MODE" == "Server" ]]; then
+            $SUDO_CMD apk add zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
+        else
+            $SUDO_CMD apk add zsh git curl fzf
+        fi
+
+        if [[ "$MODE" == "Desktop" ]]; then
+            $SUDO_CMD apk add p7zip unzip
+        fi
+        ;;
+    "openSUSE")
+        if [[ "$MODE" == "Server" ]]; then
+            $SUDO_CMD zypper --non-interactive install zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
+        else
+            $SUDO_CMD zypper --non-interactive install zsh git curl fzf
+        fi
+
+        if [[ "$MODE" == "Desktop" ]]; then
+            $SUDO_CMD zypper --non-interactive install p7zip unzip
         fi
         ;;
     *)
@@ -176,7 +228,11 @@ fi
 # 7. Change Default Shell
 if [[ "$SHELL" != "$(which zsh)" ]]; then
     echo -e "${YELLOW}[*] Changing your default shell to ZSH...${NC}"
-    chsh -s "$(which zsh)"
+    if command -v chsh >/dev/null 2>&1; then
+        chsh -s "$(which zsh)" || echo -e "${YELLOW}[!] Warning: Could not change default shell automatically. Please run: chsh -s $(which zsh) manually.${NC}"
+    else
+        echo -e "${YELLOW}[!] Warning: chsh command not found. Please change your default shell to ZSH manually.${NC}"
+    fi
 fi
 
 echo -e "${GREEN}==========================================${NC}"
