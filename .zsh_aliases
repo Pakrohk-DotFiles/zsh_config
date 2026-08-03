@@ -18,7 +18,20 @@ if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
     # Refresh system fonts cache
     refonts() {
       echo "[*] Refreshing font cache..."
-      sudo fc-cache -f -r -v
+      if [ "$(uname)" = "Darwin" ]; then
+        if command -v atsutil >/dev/null 2>&1; then
+          atsutil databases -remove
+          echo "[*] macOS font databases removed. Restarting font server may be required or done automatically."
+        else
+          echo "[!] atsutil not found. Cannot refresh font cache on macOS."
+        fi
+      else
+        if command -v fc-cache >/dev/null 2>&1; then
+          sudo fc-cache -f -r -v
+        else
+          echo "[!] fc-cache not found. Cannot refresh font cache."
+        fi
+      fi
     }
 
     # Restart audio + Discord
@@ -55,13 +68,30 @@ if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
     fi
 fi
 
-# Remove orphaned packages safely (Arch only, available on server too if arch)
-if [ -f /etc/arch-release ]; then
-    softar() {
-      echo "[*] Removing orphaned packages..."
+# Remove orphaned packages safely across multiple OS/package managers
+softar() {
+  echo "[*] Removing orphaned packages..."
+  if command -v paru >/dev/null 2>&1 || command -v pacman >/dev/null 2>&1; then
+    if [ -f /etc/arch-release ]; then
       sudo pacman -Rn $(pacman -Qdtq)
-    }
+    fi
+  elif command -v brew >/dev/null 2>&1; then
+    brew cleanup
+  elif command -v apt-get >/dev/null 2>&1; then
+    sudo apt-get autoremove -y
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf autoremove -y
+  elif command -v apk >/dev/null 2>&1; then
+    echo "[*] apk has no separate autoremove, cleaning cache..."
+    sudo apk cache clean
+  elif command -v zypper >/dev/null 2>&1; then
+    sudo zypper rm -u
+  else
+    echo "[!] No supported package manager found to clean orphans."
+  fi
+}
 
+if [ -f /etc/arch-release ]; then
     repack_arch() {
       echo "[*] Reinstalling all explicitly installed packages..."
       pacman -Qnq | sudo pacman -Sy -
