@@ -27,13 +27,40 @@ send_notification() {
 zsh_update() {
     echo -e "\e[34m[*] Updating ZSH configuration...\e[0m"
     cd "$ZSH_CONFIG_DIR"
+
+    # Check if there are any local changes
+    local has_changes=0
+    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+        has_changes=1
+        echo -e "\e[33m[*] Local changes detected. Stashing them temporarily to prevent overwriting...\e[0m"
+        git stash -q -m "zsh_update stash before pull on $(date)"
+    fi
+
+    echo -e "\e[34m[*] Pulling latest updates from repository...\e[0m"
     if git pull; then
-        echo -e "\e[32m[+] ZSH configuration updated successfully!\e[0m"
-        echo -e "\e[33m[*] Compiling new configurations for maximum speed...\e[0m"
+        echo -e "\e[32m[+] ZSH configuration pulled successfully!\e[0m"
+
+        # Restore local changes if stashed
+        if (( has_changes )); then
+            echo -e "\e[33m[*] Re-applying your local changes...\e[0m"
+            if git stash pop -q; then
+                echo -e "\e[32m[+] Your local changes have been successfully merged!\e[0m"
+            else
+                echo -e "\e[31m[!] Warning: Merge conflict detected when applying your local changes.\e[0m"
+                echo -e "\e[33m[*] Please review and resolve conflicts in: $ZSH_CONFIG_DIR\e[0m"
+            fi
+        fi
+
+        echo -e "\e[33m[*] Compiling configurations for maximum speed...\e[0m"
         zsh -c "source $ZSH_CONFIG_DIR/znap/znap.zsh && znap compile $ZSH_CONFIG_DIR"
         echo -e "\e[32m[+] Compilation complete. Please reload your shell with: source ~/.zshrc\e[0m"
     else
-        echo -e "\e[31m[!] Failed to update configuration. Please check your internet connection.\e[0m"
+        echo -e "\e[31m[!] Failed to pull configuration. Please check your internet connection.\e[0m"
+        # If pull failed, restore stash anyway
+        if (( has_changes )); then
+            echo -e "\e[33m[*] Restoring your local changes...\e[0m"
+            git stash pop -q || true
+        fi
     fi
 }
 
