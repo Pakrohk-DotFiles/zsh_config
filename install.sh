@@ -157,8 +157,16 @@ case $OS in
     "Arch")
         echo -e "${BLUE}[*] Syncing pacman database...${NC}"
         if [ "$MODE" == "Desktop" ] && command -v reflector &> /dev/null; then
-            echo -e "${BLUE}[*] Refreshing Arch Linux mirrors first...${NC}"
-            $SUDO_CMD reflector --country "Germany,France" -l 10 --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || true
+            if [ -t 0 ] || [ -c /dev/tty ]; then
+                echo -e "${YELLOW}Do you want to refresh Arch Linux mirrors using reflector? (y/n)${NC}"
+                read -p "Selection [y/n]: " mirror_choice < /dev/tty
+                if [[ "$mirror_choice" =~ ^[Yy]$ ]]; then
+                    echo -e "${BLUE}[*] Refreshing Arch Linux mirrors...${NC}"
+                    $SUDO_CMD reflector --country "Germany,France" -l 10 --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || true
+                fi
+            else
+                echo -e "${BLUE}[*] Non-interactive mode. Skipping optional mirror refresh.${NC}"
+            fi
         fi
         $SUDO_CMD pacman -Sy
         ;;
@@ -213,13 +221,20 @@ case $OS in
 
         if [[ "$MODE" == "Desktop" ]]; then
             echo -e "${BLUE}[*] Installing Desktop-specific dependencies (Arch)...${NC}"
-            $SUDO_CMD pacman -S --needed --noconfirm base-devel reflector p7zip unzip python-virtualenvwrapper
+            $SUDO_CMD pacman -S --needed --noconfirm base-devel reflector p7zip unzip
 
             if ! command -v paru &> /dev/null; then
                 echo -e "${YELLOW}[!] Paru (AUR helper) not found. Installing...${NC}"
                 git clone https://aur.archlinux.org/paru.git /tmp/paru
                 cd /tmp/paru && makepkg -si --noconfirm
                 cd -
+            fi
+
+            if ! pacman -Qi python-virtualenvwrapper &>/dev/null; then
+                echo -e "${BLUE}[*] Installing python-virtualenvwrapper from AUR...${NC}"
+                paru -S --needed --noconfirm python-virtualenvwrapper
+            else
+                echo -e "${BLUE}[*] python-virtualenvwrapper is already installed. Skipping...${NC}"
             fi
         fi
         ;;
