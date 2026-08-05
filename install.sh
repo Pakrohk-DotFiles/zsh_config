@@ -87,14 +87,19 @@ if [[ -z "$MODE" ]]; then
         echo -e "1) ${GREEN}Desktop/Personal${NC} (Full features, includes AUR helpers and desktop tools)"
         echo -e "2) ${GREEN}Server${NC} (Minimal, focused on stability and security)"
 
-        while true; do
-            read -p "Selection [1 or 2]: " mode_choice < /dev/tty
-            case $mode_choice in
-                1) MODE="Desktop"; break ;;
-                2) MODE="Server"; break ;;
-                *) echo -e "${RED}Invalid choice. Please enter 1 or 2.${NC}" ;;
-            esac
-        done
+        if [ -t 0 ] || [ -c /dev/tty ]; then
+            while true; do
+                read -p "Selection [1 or 2]: " mode_choice < /dev/tty
+                case $mode_choice in
+                    1) MODE="Desktop"; break ;;
+                    2) MODE="Server"; break ;;
+                    *) echo -e "${RED}Invalid choice. Please enter 1 or 2.${NC}" ;;
+                esac
+            done
+        else
+            echo -e "${YELLOW}[*] Non-interactive environment detected. Defaulting to Desktop mode.${NC}"
+            MODE="Desktop"
+        fi
     fi
 fi
 echo -e "${BLUE}[*] Mode Selected: ${YELLOW}$MODE${NC}"
@@ -102,21 +107,25 @@ echo -e "${BLUE}[*] Mode Selected: ${YELLOW}$MODE${NC}"
 # Ask for programming environments interactively if not parsed via arguments
 if [[ "$1" != "--no-python" && "$1" != "--no-rust" && "$1" != "--no-go" && "$1" != "--no-node" ]]; then
     if [[ "$MODE" == "Desktop" ]]; then
-        echo -e "${YELLOW}Do you want to enable Python programming environment? (y/n)${NC}"
-        read -p "Selection [y/n]: " py_choice < /dev/tty
-        [[ "$py_choice" =~ ^[Nn]$ ]] && ENABLE_PYTHON="no"
+        if [ -t 0 ] || [ -c /dev/tty ]; then
+            echo -e "${YELLOW}Do you want to enable Python programming environment? (y/n)${NC}"
+            read -p "Selection [y/n]: " py_choice < /dev/tty
+            [[ "$py_choice" =~ ^[Nn]$ ]] && ENABLE_PYTHON="no"
 
-        echo -e "${YELLOW}Do you want to enable Rust programming environment? (y/n)${NC}"
-        read -p "Selection [y/n]: " rust_choice < /dev/tty
-        [[ "$rust_choice" =~ ^[Nn]$ ]] && ENABLE_RUST="no"
+            echo -e "${YELLOW}Do you want to enable Rust programming environment? (y/n)${NC}"
+            read -p "Selection [y/n]: " rust_choice < /dev/tty
+            [[ "$rust_choice" =~ ^[Nn]$ ]] && ENABLE_RUST="no"
 
-        echo -e "${YELLOW}Do you want to enable Go programming environment? (y/n)${NC}"
-        read -p "Selection [y/n]: " go_choice < /dev/tty
-        [[ "$go_choice" =~ ^[Nn]$ ]] && ENABLE_GO="no"
+            echo -e "${YELLOW}Do you want to enable Go programming environment? (y/n)${NC}"
+            read -p "Selection [y/n]: " go_choice < /dev/tty
+            [[ "$go_choice" =~ ^[Nn]$ ]] && ENABLE_GO="no"
 
-        echo -e "${YELLOW}Do you want to enable Node.js programming environment? (y/n)${NC}"
-        read -p "Selection [y/n]: " node_choice < /dev/tty
-        [[ "$node_choice" =~ ^[Nn]$ ]] && ENABLE_NODE="no"
+            echo -e "${YELLOW}Do you want to enable Node.js programming environment? (y/n)${NC}"
+            read -p "Selection [y/n]: " node_choice < /dev/tty
+            [[ "$node_choice" =~ ^[Nn]$ ]] && ENABLE_NODE="no"
+        else
+            echo -e "${BLUE}[*] Non-interactive environment. Enabling all programming languages by default.${NC}"
+        fi
     fi
 fi
 
