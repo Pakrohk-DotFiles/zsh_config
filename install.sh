@@ -175,10 +175,6 @@ case $OS in
     "openSUSE")
         $SUDO_CMD zypper --non-interactive refresh
         ;;
-    "Windows-MSYS")
-        echo -e "${BLUE}[*] Syncing MSYS2 pacman database...${NC}"
-        pacman -Sy
-        ;;
 esac
 
 # 4. Install Core Dependencies
@@ -459,18 +455,7 @@ if [[ "$CURRENT_SHELL_NAME" != "zsh" ]]; then
     if [ "$OS" = "macOS" ] && [ -f /bin/zsh ]; then
         TARGET_SHELL="/bin/zsh"
     fi
-    if [ "$OS" = "Windows-MSYS" ]; then
-        # On Windows MSYS2, chsh might not be available. The cleanest way is executing zsh from .bashrc.
-        if [ -f "$HOME/.bashrc" ]; then
-            if ! grep -q "exec zsh" "$HOME/.bashrc"; then
-                echo -e "${BLUE}[*] Configuring auto-start Zsh in ~/.bashrc...${NC}"
-                echo -e "\n# Auto-start Zsh\nif [ -t 1 ]; then\n    exec zsh\nfi" >> "$HOME/.bashrc"
-            fi
-        else
-            echo -e "${BLUE}[*] Creating ~/.bashrc with auto-start Zsh...${NC}"
-            echo -e "# Auto-start Zsh\nif [ -t 1 ]; then\n    exec zsh\nfi" > "$HOME/.bashrc"
-        fi
-    elif command -v chsh >/dev/null 2>&1; then
+    if command -v chsh >/dev/null 2>&1; then
         chsh -s "$TARGET_SHELL" || echo -e "${YELLOW}[!] Warning: Could not change default shell automatically. Please run: chsh -s $TARGET_SHELL manually.${NC}"
     else
         echo -e "${YELLOW}[!] Warning: chsh command not found. Please change your default shell to ZSH manually.${NC}"
