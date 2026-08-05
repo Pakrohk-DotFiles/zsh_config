@@ -6,6 +6,21 @@
 # All other config files are sourced from here.
 ZSH_CONFIG_DIR=~/.zsh_config
 
+# --- macOS-specific Homebrew environment setup ---
+if [[ "$(uname)" == "Darwin" ]]; then
+    # Bootstrap Homebrew path if brew is not in PATH
+    if ! command -v brew >/dev/null 2>&1; then
+        if [[ -f /opt/homebrew/bin/brew ]]; then
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+        elif [[ -f /usr/local/bin/brew ]]; then
+            eval "$(/usr/local/bin/brew shellenv)"
+        fi
+    fi
+    # Ensure sbin is in PATH for tools like mtr
+    [[ -d "/opt/homebrew/sbin" && ":$PATH:" != *":/opt/homebrew/sbin:"* ]] && export PATH="/opt/homebrew/sbin:$PATH"
+    [[ -d "/usr/local/sbin" && ":$PATH:" != *":/usr/local/sbin:"* ]] && export PATH="/usr/local/sbin:$PATH"
+fi
+
 ### --- Bootstrap Znap ---
 # This must happen before sourcing .zshrc.local if it uses znap
 [[ -r $ZSH_CONFIG_DIR/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git $ZSH_CONFIG_DIR/znap
@@ -14,13 +29,19 @@ source $ZSH_CONFIG_DIR/znap/znap.zsh
 ########################################
 # External Configs & Overrides (Priority)
 ########################################
-# Load local overrides early to set environment type
+# Load local overrides early to set environment type & language support variables
 [ -f "$ZSH_CONFIG_DIR/.zshrc.local" ] && source "$ZSH_CONFIG_DIR/.zshrc.local"
 
 # Force server mode if running as root
 if [[ "$EUID" -eq 0 ]]; then
     export ZSH_ENV_TYPE='server'
 fi
+
+# Define defaults for language flags if not set by .zshrc.local
+[[ -z "$ENABLE_PYTHON" ]] && export ENABLE_PYTHON="yes"
+[[ -z "$ENABLE_RUST" ]] && export ENABLE_RUST="yes"
+[[ -z "$ENABLE_GO" ]] && export ENABLE_GO="yes"
+[[ -z "$ENABLE_NODE" ]] && export ENABLE_NODE="yes"
 
 ########################################
 # ZSH Options
@@ -95,7 +116,9 @@ if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
     znap source marlonrichert/zcolors
     znap source mfaerevaag/wd
     znap source djui/alias-tips
-    znap source ohmyzsh/ohmyzsh plugins/virtualenvwrapper
+    if [[ "$ENABLE_PYTHON" == "yes" ]]; then
+        znap source ohmyzsh/ohmyzsh plugins/virtualenvwrapper
+    fi
     znap source rupa/z
 fi
 

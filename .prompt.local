@@ -24,78 +24,96 @@ ensure_starship
 # 3) Load Starship with znap eval (caches output for speed)
 znap eval starship 'starship init zsh --print-full-init'
 
-# 4) Create default starship.toml if missing
+# 4) Create default starship.toml if missing or update it based on ENABLE_ language preferences
 STARSHIP_CONF="$HOME/.config/starship.toml"
-if [[ ! -f "$STARSHIP_CONF" ]]; then
-  mkdir -p "$(dirname "$STARSHIP_CONF")"
-  cat > "$STARSHIP_CONF" <<'TOML'
+
+# Setup default formats dynamically based on ENABLE_ settings
+python_segment=""
+rust_segment=""
+go_segment=""
+node_segment=""
+
+if [[ "$ENABLE_PYTHON" != "no" ]]; then
+    python_segment='$python'
+fi
+if [[ "$ENABLE_RUST" != "no" ]]; then
+    rust_segment='$rust'
+fi
+if [[ "$ENABLE_GO" != "no" ]]; then
+    go_segment='$golang'
+fi
+if [[ "$ENABLE_NODE" != "no" ]]; then
+    node_segment='$nodejs'
+fi
+
+# Always write/update starship.toml to reflect custom dynamic language segments
+mkdir -p "$(dirname "$STARSHIP_CONF")"
+cat > "$STARSHIP_CONF" <<TOML
 # ~/.config/starship.toml
-# Prompt: Line 1 (empty), Line 2 (user@host -> dir git cmd_duration), Line 3 (lambda with space)
+# Prompt: Line 1 (empty), Line 2 (user@host ➜ dir git cmd_duration), Line 3 (lambda with space)
 
 add_newline = true
 command_timeout = 2000
 
 # Prompt format
-format = """$python$rust$golang$nodejs${custom.userinfo}$directory$git_status($git_branch) $cmd_duration
-$character
+format = """$python_segment$rust_segment$go_segment$node_segment\${custom.userinfo}\$directory\$git_status(\$git_branch) \$cmd_duration
+\$character
 """
 
 [python]
-format = "([$symbol($virtualenv)]($style) )"
+format = "([\$symbol\$version (venv: \$virtualenv)](\$style) )"
 style = "bold yellow"
 
 [rust]
-format = "([$symbol($version)]($style) )"
+format = "([\$symbol\$version](\$style) )"
 style = "bold red"
 
 [golang]
-format = "([$symbol($version)]($style) )"
+format = "([\$symbol\$version](\$style) )"
 style = "bold cyan"
 
 [nodejs]
-format = "([$symbol($version)]($style) )"
+format = "([\$symbol\$version](\$style) )"
 style = "bold green"
 
 [custom.userinfo]
-command = "printf '%s@%s -> ' \"$USER\" \"$(uname -n)\""
+command = "printf '%s@%s ➜ ' \\"\$USER\\" \\"\$(uname -n)\\""
 when = "true"
 style = "bold 242"
 
 [directory]
 truncate_to_repo = true
-format = "[$path ](bold blue)"
+format = "[\$path ](bold blue)"
 style = "bold blue"
 
 [git_branch]
 symbol = "  "
-format = "[$symbol$branch](bold yellow)"
+format = "[\$symbol\$branch](bold yellow)"
 truncation_length = 8
 style = "bold yellow"
 
 [git_status]
-format = "[$all_status$ahead_behind](bold purple)"
+format = "[\$all_status\$ahead_behind](bold purple)"
 style = "bold purple"
-conflicted = "⚔️($count)"
-ahead = "↑($count)"
-behind = "↓($count)"
-diverged = "↕($count)"
-untracked = "★($count)"
-stashed = "📍($count)"
-modified = " ✏️($count)"
-staged = "✔($count)"
-renamed = "➜($count)"
-deleted = "🗑($count)"
+conflicted = "⚔️(\$count)"
+ahead = "↑(\$count)"
+behind = "↓(\$count)"
+diverged = "↕(\$count)"
+untracked = "★(\$count)"
+stashed = "📍(\$count)"
+modified = " ✏️(\$count)"
+staged = "✔(\$count)"
+renamed = "➜(\$count)"
+deleted = "🗑(\$count)"
 
 [cmd_duration]
 min_time = 2000
-format = "[ ⏱ took $duration](bold green)"
+format = "[ ⏱ took \$duration](bold green)"
 style = "bold green"
 
 [character]
 success_symbol = "[ λ](bold green)"
 error_symbol = "[ λ](bold red)"
 vicmd_symbol = "[ λ](bold yellow)"
-format = "$symbol "
+format = "\$symbol "
 TOML
-  echo "[prompt] Created $STARSHIP_CONF"
-fi
