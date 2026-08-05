@@ -82,9 +82,9 @@ search_and_install() {
             fi
             ;;
         "brew")
-            # Use brew search or an interactive search input to let fzf load packages
+            # Fast, clean, one-per-line list of all installable formulae and casks
             packages=$(
-                (brew search "" | grep -v '==>') | \
+                (brew formulae; brew casks) 2>/dev/null | \
                 fzf --prompt="Search brew packages: " \
                     --multi \
                     --reverse \
@@ -187,7 +187,7 @@ remove_packages() {
             fi
             ;;
         "brew")
-            packages=$(brew list | \
+            packages=$( (brew list --formulae; brew list --casks) 2>/dev/null | \
                 fzf --prompt="Select packages to remove: " \
                     --multi \
                     --reverse \
@@ -469,11 +469,11 @@ list_foreign() {
             fi
             ;;
         "brew")
-            packages=$(brew list --cask | \
+            packages=$( (brew list --casks || brew list --cask) 2>/dev/null | \
                 fzf --prompt="Installed Homebrew Casks: " \
                     --multi \
                     --reverse \
-                    --preview 'brew info --cask {}' \
+                    --preview 'brew info {}' \
                     --header $'Cask packages (GUI applications)\nTAB to select multiple\nEnter to remove'
             )
             if [[ -n "$packages" ]]; then
