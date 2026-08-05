@@ -30,6 +30,8 @@ elif [ -f /etc/alpine-release ]; then
     OS="Alpine"
 elif [ -f /etc/suse-release ] || { [ -f /etc/os-release ] && grep -qi 'opensuse' /etc/os-release; }; then
     OS="openSUSE"
+elif [[ "$(uname)" == *"MSYS"* || "$(uname)" == *"MINGW"* || "$(uname)" == *"CYGWIN"* ]]; then
+    OS="Windows-MSYS"
 fi
 
 echo -e "${BLUE}[*] OS Detected: ${YELLOW}$OS${NC}"
@@ -173,6 +175,10 @@ case $OS in
     "openSUSE")
         $SUDO_CMD zypper --non-interactive refresh
         ;;
+    "Windows-MSYS")
+        echo -e "${BLUE}[*] Syncing MSYS2 pacman database...${NC}"
+        pacman -Sy
+        ;;
 esac
 
 # 4. Install Core Dependencies
@@ -264,6 +270,17 @@ case $OS in
 
         if [[ "$MODE" == "Desktop" ]]; then
             $SUDO_CMD zypper --non-interactive install p7zip unzip
+        fi
+        ;;
+    "Windows-MSYS")
+        if [[ "$MODE" == "Server" ]]; then
+            pacman -S --needed --noconfirm zsh git curl
+        else
+            pacman -S --needed --noconfirm zsh git curl fzf
+        fi
+
+        if [[ "$MODE" == "Desktop" ]]; then
+            pacman -S --needed --noconfirm unzip p7zip
         fi
         ;;
     *)
@@ -442,7 +459,18 @@ if [[ "$CURRENT_SHELL_NAME" != "zsh" ]]; then
     if [ "$OS" = "macOS" ] && [ -f /bin/zsh ]; then
         TARGET_SHELL="/bin/zsh"
     fi
-    if command -v chsh >/dev/null 2>&1; then
+    if [ "$OS" = "Windows-MSYS" ]; then
+        # On Windows MSYS2, chsh might not be available. The cleanest way is executing zsh from .bashrc.
+        if [ -f "$HOME/.bashrc" ]; then
+            if ! grep -q "exec zsh" "$HOME/.bashrc"; then
+                echo -e "${BLUE}[*] Configuring auto-start Zsh in ~/.bashrc...${NC}"
+                echo -e "\n# Auto-start Zsh\nif [ -t 1 ]; then\n    exec zsh\nfi" >> "$HOME/.bashrc"
+            fi
+        else
+            echo -e "${BLUE}[*] Creating ~/.bashrc with auto-start Zsh...${NC}"
+            echo -e "# Auto-start Zsh\nif [ -t 1 ]; then\n    exec zsh\nfi" > "$HOME/.bashrc"
+        fi
+    elif command -v chsh >/dev/null 2>&1; then
         chsh -s "$TARGET_SHELL" || echo -e "${YELLOW}[!] Warning: Could not change default shell automatically. Please run: chsh -s $TARGET_SHELL manually.${NC}"
     else
         echo -e "${YELLOW}[!] Warning: chsh command not found. Please change your default shell to ZSH manually.${NC}"
