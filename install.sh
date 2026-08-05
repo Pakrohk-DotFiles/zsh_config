@@ -45,6 +45,7 @@ ENABLE_PYTHON="yes"
 ENABLE_RUST="yes"
 ENABLE_GO="yes"
 ENABLE_NODE="yes"
+INTERACTIVE_LANGS="yes"
 
 # 2. Choose Mode & Customize Language Support
 # Parse arguments
@@ -60,18 +61,22 @@ for arg in "$@"; do
             ;;
         --no-python)
             ENABLE_PYTHON="no"
+            INTERACTIVE_LANGS="no"
             shift
             ;;
         --no-rust)
             ENABLE_RUST="no"
+            INTERACTIVE_LANGS="no"
             shift
             ;;
         --no-go)
             ENABLE_GO="no"
+            INTERACTIVE_LANGS="no"
             shift
             ;;
         --no-node)
             ENABLE_NODE="no"
+            INTERACTIVE_LANGS="no"
             shift
             ;;
     esac
@@ -105,7 +110,7 @@ fi
 echo -e "${BLUE}[*] Mode Selected: ${YELLOW}$MODE${NC}"
 
 # Ask for programming environments interactively if not parsed via arguments
-if [[ "$1" != "--no-python" && "$1" != "--no-rust" && "$1" != "--no-go" && "$1" != "--no-node" ]]; then
+if [[ "$INTERACTIVE_LANGS" == "yes" ]]; then
     if [[ "$MODE" == "Desktop" ]]; then
         if [ -t 0 ] || [ -c /dev/tty ]; then
             echo -e "${YELLOW}Do you want to enable Python programming environment? (y/n)${NC}"
