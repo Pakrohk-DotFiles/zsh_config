@@ -31,6 +31,29 @@ curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/he
 curl -fsSL https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.sh | bash -s -- --desktop
 ```
 
+### 🪟 Windows Installation (WSL & MSYS2 / Native)
+
+If you are on Windows, you can use our dedicated PowerShell installer supporting both **WSL (Windows Subsystem for Linux)** and **MSYS2 (Native Windows)**.
+
+Run the following command in **PowerShell (as Administrator)**:
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.ps1'))
+```
+
+This installer will guide you through:
+1. **WSL (Option 1):** Installs the configuration inside your selected WSL distribution.
+2. **MSYS2 (Option 2):** Detects existing MSYS2 installation or automatically installs MSYS2 silently, then configures Zsh as the default shell and sets up all configurations.
+
+#### 🇮🇷 راهنمای نصب در ویندوز (فارسی)
+اگر از سیستم‌عامل ویندوز استفاده می‌کنید، می‌توانید با اجرای دستور زیر در محیط **PowerShell** (به صورت Run as Administrator) فرآیند نصب را به راحتی انجام دهید:
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Pakrohk-DotFiles/zsh_config/refs/heads/main/install.ps1'))
+```
+
+این نصاب به شما امکان می‌دهد پیکربندی را در **WSL** یا به صورت بومی از طریق **MSYS2** نصب کنید (در صورت عدم وجود MSYS2، آن را به طور خودکار دانلود و نصب می‌کند).
+
 The installer will:
 1. Detect your Operating System.
 2. Ask you to choose between **Desktop/Personal** or **Server** mode.
