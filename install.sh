@@ -30,6 +30,8 @@ elif [ -f /etc/alpine-release ]; then
     OS="Alpine"
 elif [ -f /etc/suse-release ] || { [ -f /etc/os-release ] && grep -qi 'opensuse' /etc/os-release; }; then
     OS="openSUSE"
+elif [[ "$(uname)" == *"MSYS"* || "$(uname)" == *"MINGW"* || "$(uname)" == *"CYGWIN"* ]]; then
+    OS="Windows-MSYS"
 fi
 
 echo -e "${BLUE}[*] OS Detected: ${YELLOW}$OS${NC}"
@@ -264,6 +266,17 @@ case $OS in
 
         if [[ "$MODE" == "Desktop" ]]; then
             $SUDO_CMD zypper --non-interactive install p7zip unzip
+        fi
+        ;;
+    "Windows-MSYS")
+        if [[ "$MODE" == "Server" ]]; then
+            pacman -S --needed --noconfirm zsh git curl
+        else
+            pacman -S --needed --noconfirm zsh git curl fzf
+        fi
+
+        if [[ "$MODE" == "Desktop" ]]; then
+            pacman -S --needed --noconfirm unzip p7zip
         fi
         ;;
     *)
