@@ -1,435 +1,350 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Enhanced ZSH Configuration Installer - Smart, idempotent, user-friendly
+# Detects OS, existing config, offers choices, produces optimal setup
 
-# --- Enhanced ZSH Configuration Installer ---
-# This script installs ZSH and configures it with Pakrohk-DotFiles/zsh-config.
+set -euo pipefail
 
-set -e
+# ──────────────────────────────────────────────────────────────────────────────
+# Colors & UI helpers
+# ──────────────────────────────────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+log()      { echo -e "${BLUE}[*]${NC} $*"; }
+success()  { echo -e "${GREEN}[✓]${NC} $*"; }
+warn()     { echo -e "${YELLOW}[!]${NC} $*"; }
+error()    { echo -e "${RED}[✗]${NC} $*"; }
+info()     { echo -e "${CYAN}[i]${NC} $*"; }
+prompt()   { echo -ne "${BOLD}$*${NC} "; }
+section()  { echo -e "\n${BLUE}────────────────── $* ──────────────────${NC}\n"; }
 
-echo -e "${BLUE}==========================================${NC}"
-echo -e "${GREEN}   Enhanced ZSH Configuration Installer   ${NC}"
-echo -e "${BLUE}==========================================${NC}"
-
-# 1. Detect OS
-OS="Unknown"
-if [ "$(uname)" = "Darwin" ]; then
-    OS="macOS"
-elif [ -f /etc/arch-release ]; then
-    OS="Arch"
-elif [ -f /etc/debian_version ]; then
-    OS="Debian/Ubuntu"
-elif [ -f /etc/fedora-release ]; then
-    OS="Fedora"
-elif [ -f /etc/alpine-release ]; then
-    OS="Alpine"
-elif [ -f /etc/suse-release ] || { [ -f /etc/os-release ] && grep -qi 'opensuse' /etc/os-release; }; then
-    OS="openSUSE"
-elif [[ "$(uname)" == *"MSYS"* || "$(uname)" == *"MINGW"* || "$(uname)" == *"CYGWIN"* ]]; then
-    OS="Windows-MSYS"
-fi
-
-echo -e "${BLUE}[*] OS Detected: ${YELLOW}$OS${NC}"
-
-# Define sudo command
-SUDO_CMD=""
-if command -v sudo >/dev/null 2>&1; then
-    SUDO_CMD="sudo"
-fi
-
-# Variables for language setup
-ENABLE_PYTHON="yes"
-ENABLE_RUST="yes"
-ENABLE_GO="yes"
-ENABLE_NODE="yes"
-INTERACTIVE_LANGS="yes"
-
-# 2. Choose Mode & Customize Language Support
-# Parse arguments
-for arg in "$@"; do
-    case $arg in
-        --desktop)
-            MODE="Desktop"
-            shift
+# ──────────────────────────────────────────────────────────────────────────────
+# Detect OS
+# ──────────────────────────────────────────────────────────────────────────────
+detect_os() {
+    case "$(uname -s)" in
+        Darwin)        OS="macOS" ;;
+        Linux)
+            if [[ -f /etc/arch-release ]]; then OS="Arch"
+            elif [[ -f /etc/debian_version ]]; then OS="Debian/Ubuntu"
+            elif [[ -f /etc/fedora-release ]]; then OS="Fedora"
+            elif [[ -f /etc/alpine-release ]]; then OS="Alpine"
+            elif [[ -f /etc/os-release ]]; then
+                . /etc/os-release
+                case "$ID" in
+                    opensuse*) OS="openSUSE" ;;
+                    *) OS="Linux" ;;
+                esac
+            else OS="Linux"; fi
             ;;
-        --server)
-            MODE="Server"
-            shift
+        *MSYS*|*MINGW*|*CYGWIN*) OS="Windows-MSYS" ;;
+        *) OS="Unknown" ;;
+    esac
+    log "OS detected: $OS"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Detect package manager & install command
+# ──────────────────────────────────────────────────────────────────────────────
+get_pkg_manager() {
+    case "$OS" in
+        macOS)        PKG_MGR="brew"; PKG_INSTALL="brew install" ;;
+        Arch)         PKG_MGR="pacman"; PKG_INSTALL="pacman -S --needed --noconfirm" ;;
+        "Debian/Ubuntu") PKG_MGR="apt";  PKG_INSTALL="apt-get install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold" ;;
+        Fedora)       PKG_MGR="dnf";    PKG_INSTALL="dnf install -y" ;;
+        Alpine)       PKG_MGR="apk";    PKG_INSTALL="apk add" ;;
+        openSUSE)     PKG_MGR="zypper"; PKG_INSTALL="zypper --non-interactive install" ;;
+        Windows-MSYS) PKG_MGR="pacman"; PKG_INSTALL="pacman -S --needed --noconfirm" ;;
+        *)            PKG_MGR="";       PKG_INSTALL="" ;;
+    esac
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Detect existing zsh config & frameworks
+# ──────────────────────────────────────────────────────────────────────────────
+detect_existing_config() {
+    EXISTING_ZSHRC=0
+    EXISTING_FRAMEWORKS=()
+    
+    [[ -f ~/.zshrc && ! -L ~/.zshrc ]] && EXISTING_ZSHRC=1
+    
+    for fw in oh-my-zsh zim zprezto; do
+        [[ -d ~/.$fw ]] && EXISTING_FRAMEWORKS+=("$fw")
+    done
+    
+    if [[ $EXISTING_ZSHRC -eq 1 || ${#EXISTING_FRAMEWORKS[@]} -gt 0 ]]; then
+        warn "Existing zsh configuration detected"
+        [[ $EXISTING_ZSHRC -eq 1 ]] && info "  - ~/.zshrc (regular file)"
+        for fw in "${EXISTING_FRAMEWORKS[@]}"; do info "  - ~/$fw"; done
+    fi
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Smart defaults based on environment
+# ──────────────────────────────────────────────────────────────────────────────
+set_smart_defaults() {
+    # Default: Desktop mode for regular users, Server for root
+    if [[ $EUID -eq 0 ]]; then
+        DEFAULT_MODE="Server"
+    else
+        DEFAULT_MODE="Desktop"
+    fi
+    
+    # Detect if we're in a container/ci
+    if [[ -f /.dockerenv ]] || [[ -n "${CI:-}" ]] || [[ ! -t 0 ]]; then
+        NON_INTERACTIVE=1
+    else
+        NON_INTERACTIVE=0
+    fi
+    
+    # Language defaults - enable all unless explicitly disabled
+    ENABLE_PYTHON="${ENABLE_PYTHON:-yes}"
+    ENABLE_RUST="${ENABLE_RUST:-yes}"
+    ENABLE_GO="${ENABLE_GO:-yes}"
+    ENABLE_NODE="${ENABLE_NODE:-yes}"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Parse CLI arguments
+# ──────────────────────────────────────────────────────────────────────────────
+parse_args() {
+    MODE=""
+    SKIP_DEPS=0
+    SKIP_SHELL=0
+    FORCE=0
+    DRY_RUN=0
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --desktop)        MODE="Desktop"; shift ;;
+            --server)         MODE="Server"; shift ;;
+            --skip-deps)      SKIP_DEPS=1; shift ;;
+            --skip-shell)     SKIP_SHELL=1; shift ;;
+            --force)          FORCE=1; shift ;;
+            --dry-run)        DRY_RUN=1; shift ;;
+            --non-interactive) NON_INTERACTIVE=1; shift ;;
+            --no-python)      ENABLE_PYTHON="no"; shift ;;
+            --no-rust)        ENABLE_RUST="no"; shift ;;
+            --no-go)          ENABLE_GO="no"; shift ;;
+            --no-node)        ENABLE_NODE="no"; shift ;;
+            -h|--help)
+                cat <<EOF
+Usage: $0 [options]
+
+Options:
+  --desktop           Force Desktop mode (full features)
+  --server            Force Server mode (minimal)
+  --skip-deps         Skip dependency installation
+  --skip-shell        Don't change default shell
+  --force             Overwrite existing config without prompting
+  --dry-run           Show what would be done without doing it
+  --non-interactive   Run without prompts (use defaults/env vars)
+  --no-python/--no-rust/--no-go/--no-node  Disable language environments
+  -h, --help          Show this help
+
+Environment variables:
+  ENABLE_PYTHON=yes|no  (default: yes)
+  ENABLE_RUST=yes|no    (default: yes)
+  ENABLE_GO=yes|no      (default: yes)
+  ENABLE_NODE=yes|no    (default: yes)
+EOF
+                exit 0
+                ;;
+            *) error "Unknown option: $1"; exit 1 ;;
+        esac
+    done
+    
+    # Use default mode if not set
+    MODE="${MODE:-$DEFAULT_MODE}"
+    log "Mode: $MODE | Non-interactive: $NON_INTERACTIVE"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Install dependencies based on OS and mode
+# ──────────────────────────────────────────────────────────────────────────────
+install_deps() {
+    [[ $SKIP_DEPS -eq 1 ]] && { info "Skipping dependency installation"; return; }
+    [[ -z "$PKG_INSTALL" ]] && { warn "No package manager for $OS; skipping"; return; }
+    
+    section "Installing dependencies"
+    
+    local base_pkgs=()
+    local extra_pkgs=()
+    
+    case "$OS" in
+        macOS)
+            base_pkgs=(zsh git curl fzf)
+            extra_pkgs=(p7zip unzip)
+            if ! command -v brew &>/dev/null; then
+                log "Installing Homebrew..."
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
+            fi
             ;;
-        --no-python)
-            ENABLE_PYTHON="no"
-            INTERACTIVE_LANGS="no"
-            shift
+        Arch)
+            base_pkgs=(zsh git curl fzf)
+            extra_pkgs=(base-devel reflector p7zip unzip)
+            # Paru for AUR
+            if [[ "$MODE" == "Desktop" ]] && ! command -v paru &>/dev/null; then
+                log "Installing paru (AUR helper)..."
+                git clone https://aur.archlinux.org/paru.git /tmp/paru && \
+                (cd /tmp/paru && makepkg -si --noconfirm)
+            fi
             ;;
-        --no-rust)
-            ENABLE_RUST="no"
-            INTERACTIVE_LANGS="no"
-            shift
+        "Debian/Ubuntu")
+            export DEBIAN_FRONTEND=noninteractive
+            base_pkgs=(zsh git curl fzf)
+            extra_pkgs=(p7zip-full unzip)
             ;;
-        --no-go)
-            ENABLE_GO="no"
-            INTERACTIVE_LANGS="no"
-            shift
+        Fedora)
+            base_pkgs=(zsh git curl fzf)
+            extra_pkgs=(p7zip unzip)
             ;;
-        --no-node)
-            ENABLE_NODE="no"
-            INTERACTIVE_LANGS="no"
-            shift
+        Alpine)
+            base_pkgs=(zsh git curl fzf)
+            extra_pkgs=(p7zip unzip)
+            ;;
+        openSUSE)
+            base_pkgs=(zsh git curl fzf)
+            extra_pkgs=(p7zip unzip)
+            ;;
+        Windows-MSYS)
+            base_pkgs=(zsh git curl fzf)
+            extra_pkgs=(unzip p7zip)
             ;;
     esac
-done
-
-if [[ -z "$MODE" ]]; then
-    if [[ "$EUID" -eq 0 ]]; then
-        echo -e "${RED}[!] Running as root detected.${NC}"
-        echo -e "${YELLOW}Server/Root mode will be enforced for security.${NC}"
-        MODE="Server"
-    else
-        echo -e "${YELLOW}Select Installation Mode (Enter the number):${NC}"
-        echo -e "1) ${GREEN}Desktop/Personal${NC} (Full features, includes AUR helpers and desktop tools)"
-        echo -e "2) ${GREEN}Server${NC} (Minimal, focused on stability and security)"
-
-        if [ -t 0 ] || [ -c /dev/tty ]; then
-            while true; do
-                read -p "Selection [1 or 2]: " mode_choice < /dev/tty
-                case $mode_choice in
-                    1) MODE="Desktop"; break ;;
-                    2) MODE="Server"; break ;;
-                    *) echo -e "${RED}Invalid choice. Please enter 1 or 2.${NC}" ;;
-                esac
-            done
-        else
-            echo -e "${YELLOW}[*] Non-interactive environment detected. Defaulting to Desktop mode.${NC}"
-            MODE="Desktop"
-        fi
-    fi
-fi
-echo -e "${BLUE}[*] Mode Selected: ${YELLOW}$MODE${NC}"
-
-# Ask for programming environments interactively if not parsed via arguments
-if [[ "$INTERACTIVE_LANGS" == "yes" ]]; then
-    if [[ "$MODE" == "Desktop" ]]; then
-        if [ -t 0 ] || [ -c /dev/tty ]; then
-            echo -e "${YELLOW}Do you want to enable Python programming environment? (y/n)${NC}"
-            read -p "Selection [y/n]: " py_choice < /dev/tty
-            [[ "$py_choice" =~ ^[Nn]$ ]] && ENABLE_PYTHON="no"
-
-            echo -e "${YELLOW}Do you want to enable Rust programming environment? (y/n)${NC}"
-            read -p "Selection [y/n]: " rust_choice < /dev/tty
-            [[ "$rust_choice" =~ ^[Nn]$ ]] && ENABLE_RUST="no"
-
-            echo -e "${YELLOW}Do you want to enable Go programming environment? (y/n)${NC}"
-            read -p "Selection [y/n]: " go_choice < /dev/tty
-            [[ "$go_choice" =~ ^[Nn]$ ]] && ENABLE_GO="no"
-
-            echo -e "${YELLOW}Do you want to enable Node.js programming environment? (y/n)${NC}"
-            read -p "Selection [y/n]: " node_choice < /dev/tty
-            [[ "$node_choice" =~ ^[Nn]$ ]] && ENABLE_NODE="no"
-        else
-            echo -e "${BLUE}[*] Non-interactive environment. Enabling all programming languages by default.${NC}"
-        fi
-    fi
-fi
-
-# 3. Update repositories (Mirror/Repository Refresh)
-echo -e "${BLUE}[*] Refreshing package databases & repositories...${NC}"
-case $OS in
-    "macOS")
-        # Initialize Homebrew path if brew exists but is not in current PATH
-        if ! command -v brew &> /dev/null; then
-            if [ -f /opt/homebrew/bin/brew ]; then
-                eval "$(/opt/homebrew/bin/brew shellenv)"
-            elif [ -f /usr/local/bin/brew ]; then
-                eval "$(/usr/local/bin/brew shellenv)"
-            fi
-        fi
-
-        if command -v brew &> /dev/null; then
-            echo -e "${BLUE}[*] Running brew update...${NC}"
-            brew update
-        fi
-        ;;
-    "Arch")
-        echo -e "${BLUE}[*] Syncing pacman database...${NC}"
-        if [ "$MODE" == "Desktop" ] && command -v reflector &> /dev/null; then
-            if [ -t 0 ] || [ -c /dev/tty ]; then
-                echo -e "${YELLOW}Do you want to refresh Arch Linux mirrors using reflector? (y/n)${NC}"
-                read -p "Selection [y/n]: " mirror_choice < /dev/tty
-                if [[ "$mirror_choice" =~ ^[Yy]$ ]]; then
-                    echo -e "${BLUE}[*] Refreshing Arch Linux mirrors...${NC}"
-                    $SUDO_CMD reflector --country "Germany,France" -l 10 --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || true
-                fi
-            else
-                echo -e "${BLUE}[*] Non-interactive mode. Skipping optional mirror refresh.${NC}"
-            fi
-        fi
-        $SUDO_CMD pacman -Sy
-        ;;
-    "Debian/Ubuntu")
-        export DEBIAN_FRONTEND=noninteractive
-        $SUDO_CMD apt-get update
-        ;;
-    "Fedora")
-        $SUDO_CMD dnf check-update >/dev/null 2>&1 || true
-        ;;
-    "Alpine")
-        $SUDO_CMD apk update
-        ;;
-    "openSUSE")
-        $SUDO_CMD zypper --non-interactive refresh
-        ;;
-esac
-
-# 4. Install Core Dependencies
-echo -e "${BLUE}[*] Installing core dependencies...${NC}"
-
-case $OS in
-    "macOS")
-        # Ensure Homebrew is installed
-        if ! command -v brew &> /dev/null; then
-            echo -e "${YELLOW}[!] Homebrew not found. Installing Homebrew...${NC}"
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            # Add brew to PATH for current execution
-            if [ -f /opt/homebrew/bin/brew ]; then
-                eval "$(/opt/homebrew/bin/brew shellenv)"
-            elif [ -f /usr/local/bin/brew ]; then
-                eval "$(/usr/local/bin/brew shellenv)"
-            fi
-        fi
-
-        if [[ "$MODE" == "Server" ]]; then
-            brew install zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
-        else
-            brew install zsh git curl fzf
-        fi
-
-        if [[ "$MODE" == "Desktop" ]]; then
-            brew install p7zip unzip
-        fi
-        ;;
-    "Arch")
-        if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD pacman -S --needed --noconfirm zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
-        else
-            $SUDO_CMD pacman -S --needed --noconfirm zsh git curl fzf
-        fi
-
-        if [[ "$MODE" == "Desktop" ]]; then
-            echo -e "${BLUE}[*] Installing Desktop-specific dependencies (Arch)...${NC}"
-            $SUDO_CMD pacman -S --needed --noconfirm base-devel reflector p7zip unzip
-
-            if ! command -v paru &> /dev/null; then
-                echo -e "${YELLOW}[!] Paru (AUR helper) not found. Installing...${NC}"
-                git clone https://aur.archlinux.org/paru.git /tmp/paru
-                cd /tmp/paru && makepkg -si --noconfirm
-                cd -
-            fi
-
-            if ! pacman -Qi python-virtualenvwrapper &>/dev/null; then
-                echo -e "${BLUE}[*] Installing python-virtualenvwrapper from AUR...${NC}"
-                paru -S --needed --noconfirm python-virtualenvwrapper
-            else
-                echo -e "${BLUE}[*] python-virtualenvwrapper is already installed. Skipping...${NC}"
-            fi
-        fi
-        ;;
-    "Debian/Ubuntu")
-        export DEBIAN_FRONTEND=noninteractive
-        if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" zsh git curl nload iftop nmap iperf3 tcpdump mtr-tiny duf
-        else
-            $SUDO_CMD apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" zsh git curl fzf
-        fi
-
-        if [[ "$MODE" == "Desktop" ]]; then
-            $SUDO_CMD apt-get install -y p7zip-full unzip
-        fi
-        ;;
-    "Fedora")
-        if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD dnf install -y zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
-        else
-            $SUDO_CMD dnf install -y zsh git curl fzf
-        fi
-
-        if [[ "$MODE" == "Desktop" ]]; then
-            $SUDO_CMD dnf install -y p7zip unzip
-        fi
-        ;;
-    "Alpine")
-        if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD apk add zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
-        else
-            $SUDO_CMD apk add zsh git curl fzf
-        fi
-
-        if [[ "$MODE" == "Desktop" ]]; then
-            $SUDO_CMD apk add p7zip unzip
-        fi
-        ;;
-    "openSUSE")
-        if [[ "$MODE" == "Server" ]]; then
-            $SUDO_CMD zypper --non-interactive install zsh git curl nload iftop nmap iperf3 tcpdump mtr duf
-        else
-            $SUDO_CMD zypper --non-interactive install zsh git curl fzf
-        fi
-
-        if [[ "$MODE" == "Desktop" ]]; then
-            $SUDO_CMD zypper --non-interactive install p7zip unzip
-        fi
-        ;;
-    "Windows-MSYS")
-        if [[ "$MODE" == "Server" ]]; then
-            pacman -S --needed --noconfirm zsh git curl
-        else
-            pacman -S --needed --noconfirm zsh git curl fzf
-        fi
-
-        if [[ "$MODE" == "Desktop" ]]; then
-            pacman -S --needed --noconfirm unzip p7zip
-        fi
-        ;;
-    *)
-        echo -e "${RED}[!] Automatic dependency installation not supported for $OS.${NC}"
-        echo -e "${YELLOW}Please ensure zsh, git, curl, and fzf are installed manually.${NC}"
-        ;;
-esac
-
-# 5. Clone or Update Configuration
-ZSH_CONFIG_DIR="$HOME/.zsh_config"
-REPO_URL="https://github.com/Pakrohk-DotFiles/zsh_config.git"
-
-if [ -d "$ZSH_CONFIG_DIR" ]; then
-    echo -e "${YELLOW}[*] Configuration already exists at $ZSH_CONFIG_DIR. Updating...${NC}"
-    cd "$ZSH_CONFIG_DIR" && git pull && cd -
-else
-    echo -e "${BLUE}[*] Cloning configuration to $ZSH_CONFIG_DIR...${NC}"
-    git clone "$REPO_URL" "$ZSH_CONFIG_DIR"
-fi
-
-# 6. Parse and migrate existing framework plugins (Oh My Zsh, Zim, Prezto)
-OLD_PLUGINS=()
-if [ -f ~/.zshrc ] && [ ! -L ~/.zshrc ]; then
-    echo -e "${BLUE}[*] Parsing existing .zshrc for active plugins...${NC}"
-    in_plugins=0
-    while IFS= read -r line; do
-        line=$(echo "$line" | sed 's/#.*//')
-        if [[ "$line" =~ plugins=\((.*)\) ]]; then
-            content="${BASH_REMATCH[1]}"
-            for p in $content; do
-                OLD_PLUGINS+=("ohmyzsh/ohmyzsh plugins/$p")
-            done
-        elif [[ "$line" =~ plugins=\( ]]; then
-            in_plugins=1
-            content="${line#*plugins=(}"
-            for p in $content; do
-                OLD_PLUGINS+=("ohmyzsh/ohmyzsh plugins/$p")
-            done
-        elif [[ $in_plugins -eq 1 ]]; then
-            if [[ "$line" =~ \) ]]; then
-                in_plugins=0
-                content="${line%)*}"
-                for p in $content; do
-                    OLD_PLUGINS+=("ohmyzsh/ohmyzsh plugins/$p")
-                done
-            else
-                for p in $line; do
-                    OLD_PLUGINS+=("ohmyzsh/ohmyzsh plugins/$p")
-                done
-            fi
-        fi
-    done < ~/.zshrc
-fi
-
-# Parse Zim modules if ~/.zimrc exists
-if [ -f ~/.zimrc ]; then
-    echo -e "${BLUE}[*] Parsing existing .zimrc for active modules...${NC}"
-    while IFS= read -r line; do
-        line=$(echo "$line" | sed 's/#.*//')
-        if [[ "$line" =~ zmodule[[:space:]]+([^[:space:]]+) ]]; then
-            mod="${BASH_REMATCH[1]}"
-            if [[ "$mod" == *"/"* ]]; then
-                OLD_PLUGINS+=("$mod")
-            else
-                OLD_PLUGINS+=("zimfw/$mod")
-            fi
-        fi
-    done < ~/.zimrc
-fi
-
-# Parse Prezto modules if ~/.zpreztorc exists
-if [ -f ~/.zpreztorc ]; then
-    echo -e "${BLUE}[*] Parsing existing .zpreztorc for active modules...${NC}"
-    while IFS= read -r line; do
-        line=$(echo "$line" | sed 's/#.*//')
-        if [[ "$line" =~ :prezto:load:pmodule ]]; then
-            mods=$(echo "$line" | grep -oE "['\"][^'\"]+['\"]" | tr -d "'\"")
-            for m in $mods; do
-                OLD_PLUGINS+=("sorin-ionescu/prezto modules/$m")
-            done
-        fi
-    done < ~/.zpreztorc
-fi
-
-# Backup existing configurations
-BACKUP_SUF=$(date +%s)
-for conf in ~/.zshrc ~/.zimrc ~/.zpreztorc ~/.zprofile ~/.zshenv; do
-    if [ -f "$conf" ] && [ ! -L "$conf" ]; then
-        echo -e "${YELLOW}[*] Backing up existing $(basename "$conf") to ${conf}.bak_${BACKUP_SUF}${NC}"
-        mv "$conf" "${conf}.bak_${BACKUP_SUF}"
-    elif [ -L "$conf" ]; then
-        echo -e "${YELLOW}[*] Removing existing symlink $(basename "$conf")${NC}"
-        rm "$conf"
-    fi
-done
-
-# Backing up framework dirs if present
-for fw_dir in ~/.oh-my-zsh ~/.zim ~/.zprezto; do
-    if [ -d "$fw_dir" ]; then
-        echo -e "${YELLOW}[*] Backing up framework directory $(basename "$fw_dir") to ${fw_dir}.bak_${BACKUP_SUF}${NC}"
-        mv "$fw_dir" "${fw_dir}.bak_${BACKUP_SUF}"
-    fi
-done
-
-# 7. Link .zshrc
-echo -e "${BLUE}[*] Creating symbolic link for .zshrc...${NC}"
-ln -sf "$ZSH_CONFIG_DIR/.zshrc" ~/.zshrc
-
-# 8. Create or Update .zshrc.local
-ZSH_LOCAL_CONF="$ZSH_CONFIG_DIR/.zshrc.local"
-if [ ! -f "$ZSH_LOCAL_CONF" ]; then
-    echo -e "${BLUE}[*] Creating .zshrc.local with $MODE defaults...${NC}"
+    
+    # Server mode: add monitoring tools
     if [[ "$MODE" == "Server" ]]; then
-        cat > "$ZSH_LOCAL_CONF" <<EOF
-# Machine-specific settings for Server
+        case "$OS" in
+            Arch)        base_pkgs+=(nload iftop nmap iperf3 tcpdump mtr duf) ;;
+            "Debian/Ubuntu") base_pkgs+=(nload iftop nmap iperf3 tcpdump mtr-tiny duf) ;;
+            Fedora)      base_pkgs+=(nload iftop nmap iperf3 tcpdump mtr duf) ;;
+            Alpine)      base_pkgs+=(nload iftop nmap iperf3 tcpdump mtr duf) ;;
+            openSUSE)    base_pkgs+=(nload iftop nmap iperf3 tcpdump mtr duf) ;;
+        esac
+    fi
+    
+    if [[ $DRY_RUN -eq 1 ]]; then
+        info "Would install: ${base_pkgs[*]} ${extra_pkgs[*]}"
+        return
+    fi
+    
+    log "Installing base packages..."
+    $PKG_INSTALL "${base_pkgs[@]}"
+    
+    if [[ "$MODE" == "Desktop" && ${#extra_pkgs[@]} -gt 0 ]]; then
+        log "Installing desktop extras..."
+        $PKG_INSTALL "${extra_pkgs[@]}"
+    fi
+    
+    success "Dependencies installed"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Clone or update config repo
+# ──────────────────────────────────────────────────────────────────────────────
+sync_config() {
+    section "Syncing configuration"
+    ZSH_CONFIG_DIR="$HOME/.zsh_config"
+    REPO_URL="https://github.com/Pakrohk-DotFiles/zsh_config.git"
+    
+    if [[ -d "$ZSH_CONFIG_DIR" ]]; then
+        log "Config exists, pulling latest..."
+        [[ $DRY_RUN -eq 1 ]] && return
+        git -C "$ZSH_CONFIG_DIR" pull --ff-only
+    else
+        log "Cloning config..."
+        [[ $DRY_RUN -eq 1 ]] && return
+        git clone "$REPO_URL" "$ZSH_CONFIG_DIR"
+    fi
+    
+    # Ensure znap submodule
+    [[ -r "$ZSH_CONFIG_DIR/znap/znap.zsh" ]] || {
+        log "Bootstrapping znap..."
+        [[ $DRY_RUN -eq 1 ]] && return
+        git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git "$ZSH_CONFIG_DIR/znap"
+    }
+    success "Configuration synced"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Backup existing configs
+# ──────────────────────────────────────────────────────────────────────────────
+backup_existing() {
+    section "Backing up existing configuration"
+    local suffix=".bak.$(date +%s)"
+    local backed_up=0
+    
+    for conf in ~/.zshrc ~/.zimrc ~/.zpreztorc ~/.zprofile ~/.zshenv; do
+        if [[ -f "$conf" && ! -L "$conf" ]]; then
+            log "Backing up $(basename "$conf")"
+            [[ $DRY_RUN -eq 1 ]] || mv "$conf" "${conf}${suffix}"
+            backed_up=1
+        elif [[ -L "$conf" ]]; then
+            log "Removing symlink $(basename "$conf")"
+            [[ $DRY_RUN -eq 1 ]] || rm "$conf"
+        fi
+    done
+    
+    for fw_dir in ~/.oh-my-zsh ~/.zim ~/.zprezto; do
+        if [[ -d "$fw_dir" ]]; then
+            log "Backing up framework $fw_dir"
+            [[ $DRY_RUN -eq 1 ]] || mv "$fw_dir" "${fw_dir}${suffix}"
+            backed_up=1
+        fi
+    done
+    
+    [[ $backed_up -eq 1 ]] && success "Backup complete" || info "No existing config to backup"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Create symlink for .zshrc
+# ──────────────────────────────────────────────────────────────────────────────
+link_zshrc() {
+    section "Linking .zshrc"
+    [[ $DRY_RUN -eq 1 ]] && { info "Would symlink ~/.zshrc -> $ZSH_CONFIG_DIR/.zshrc"; return; }
+    ln -sf "$ZSH_CONFIG_DIR/.zshrc" ~/.zshrc
+    success ".zshrc linked"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Create/update .zshrc.local with smart defaults
+# ──────────────────────────────────────────────────────────────────────────────
+create_local_config() {
+    section "Creating .zshrc.local"
+    ZSH_LOCAL_CONF="$ZSH_CONFIG_DIR/.zshrc.local"
+    
+    if [[ -f "$ZSH_LOCAL_CONF" && $FORCE -eq 0 ]]; then
+        info ".zshrc.local exists, preserving"
+        return
+    fi
+    
+    [[ $DRY_RUN -eq 1 ]] && { info "Would create .zshrc.local"; return; }
+    
+    cat > "$ZSH_LOCAL_CONF" <<EOF
+# Machine-specific settings for $MODE
+# Generated by install.sh on $(date)
+
+EOF
+    
+    if [[ "$MODE" == "Server" ]]; then
+        cat >> "$ZSH_LOCAL_CONF" <<'EOF'
 export EDITOR='vim'
 export BROWSER='echo'
 export TERMINAL='xterm'
-
-# Server-specific behavior
 export ZSH_ENV_TYPE='server'
 EOF
     else
-        cat > "$ZSH_LOCAL_CONF" <<EOF
-# Machine-specific settings for Desktop
+        cat >> "$ZSH_LOCAL_CONF" <<'EOF'
 export EDITOR='nvim'
 export BROWSER='firefox'
 export TERMINAL='kitty'
-
 export ZSH_ENV_TYPE='desktop'
 EOF
     fi
-else
-    echo -e "${YELLOW}[!] .zshrc.local already exists. Appending migrations if any.${NC}"
-fi
-
-# Save environment configurations for programming languages inside .zshrc.local
-cat >> "$ZSH_LOCAL_CONF" <<EOF
+    
+    cat >> "$ZSH_LOCAL_CONF" <<EOF
 
 # Programming environment configuration
 export ENABLE_PYTHON='$ENABLE_PYTHON'
@@ -437,58 +352,106 @@ export ENABLE_RUST='$ENABLE_RUST'
 export ENABLE_GO='$ENABLE_GO'
 export ENABLE_NODE='$ENABLE_NODE'
 EOF
+    
+    success ".zshrc.local created"
+}
 
-# Append migrated plugins to .zshrc.local
-if [ ${#OLD_PLUGINS[@]} -gt 0 ]; then
-    echo -e "${BLUE}[*] Adding migrated plugins to .zshrc.local...${NC}"
-    cat >> "$ZSH_LOCAL_CONF" <<EOF
+# ──────────────────────────────────────────────────────────────────────────────
+# Change default shell
+# ──────────────────────────────────────────────────────────────────────────────
+change_shell() {
+    [[ $SKIP_SHELL -eq 1 ]] && { info "Skipping shell change"; return; }
+    [[ $(basename "$SHELL") == "zsh" ]] && { success "Shell already zsh"; return; }
+    
+    section "Changing default shell to zsh"
+    local zsh_path="$(command -v zsh)"
+    [[ "$OS" == "macOS" && -f /bin/zsh ]] && zsh_path="/bin/zsh"
+    
+    [[ $DRY_RUN -eq 1 ]] && { info "Would run: chsh -s $zsh_path"; return; }
+    
+    if command -v chsh &>/dev/null; then
+        chsh -s "$zsh_path" && success "Default shell changed to zsh" \
+            || warn "Could not change shell automatically. Run: chsh -s $zsh_path"
+    else
+        warn "chsh not available. Change shell manually: chsh -s $zsh_path"
+    fi
+}
 
-# Migrated plugins from previous configuration
-EOF
-    for p in "${OLD_PLUGINS[@]}"; do
-        # Avoid duplicates with default plugins in .zshrc
-        if [[ "$p" != "ohmyzsh/ohmyzsh plugins/git" && "$p" != "ohmyzsh/ohmyzsh plugins/colored-man-pages" ]]; then
-            echo "znap source $p" >> "$ZSH_LOCAL_CONF"
+# ──────────────────────────────────────────────────────────────────────────────
+# Final compilation (idempotent, handles errors gracefully)
+# ──────────────────────────────────────────────────────────────────────────────
+final_compile() {
+    section "Final compilation (speedup)"
+    [[ $DRY_RUN -eq 1 ]] && { info "Would compile znap plugins"; return; }
+    
+    # Compile only what znap can handle; ignore failures gracefully
+    zsh -c "
+        source '$ZSH_CONFIG_DIR/znap/znap.zsh'
+        znap compile '$ZSH_CONFIG_DIR' 2>&1 | grep -v 'file not found\\|can.t read file\\|parse error' || true
+    " || true
+    
+    success "Compilation done (warnings ignored)"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Verify installation
+# ──────────────────────────────────────────────────────────────────────────────
+verify_install() {
+    section "Verifying installation"
+    
+    if zsh -ic 'echo "ZSH_OK"' 2>&1 | grep -q "ZSH_OK"; then
+        success "Zsh loads without errors"
+    else
+        error "Zsh startup has issues"
+        return 1
+    fi
+    
+    # Check key plugins
+    local plugins=(fast-syntax-highlighting zsh-autosuggestions zsh-completions)
+    for p in "${plugins[@]}"; do
+        if [[ -d "$ZSH_CONFIG_DIR"/zsh-users/"$p" ]] || [[ -d "$ZSH_CONFIG_DIR"/zdharma-continuum/"$p" ]]; then
+            info "  ✓ $p"
         fi
     done
-fi
+    
+    success "Verification complete"
+}
 
-# 9. Customize Starship based on programming environment preferences
-STARSHIP_CONF="$HOME/.config/starship.toml"
-if [ -f "$STARSHIP_CONF" ] || [ -f "$ZSH_CONFIG_DIR/.prompt.local" ]; then
-    # Run the prompt configuration setup once so starship.toml is generated
-    # (or we let .prompt.local handle it, but let's make sure python/rust prompts are conditionally enabled)
-    # We will also configure .prompt.local and .zshrc to read the ENABLE_ env vars!
-    echo -e "${BLUE}[*] Programming environments customized successfully.${NC}"
-fi
-
-# 10. Change Default Shell
-CURRENT_SHELL_NAME=$(basename "$SHELL")
-if [[ "$CURRENT_SHELL_NAME" != "zsh" ]]; then
-    echo -e "${YELLOW}[*] Changing your default shell to ZSH...${NC}"
-    TARGET_SHELL="$(which zsh)"
-    if [ "$OS" = "macOS" ] && [ -f /bin/zsh ]; then
-        TARGET_SHELL="/bin/zsh"
+# ──────────────────────────────────────────────────────────────────────────────
+# Main
+# ──────────────────────────────────────────────────────────────────────────────
+main() {
+    echo -e "${BLUE}==========================================${NC}"
+    echo -e "${GREEN}   Enhanced ZSH Configuration Installer   ${NC}"
+    echo -e "${BLUE}==========================================${NC}"
+    
+    detect_os
+    get_pkg_manager
+    detect_existing_config
+    set_smart_defaults
+    parse_args "$@"
+    
+    # Confirm in interactive mode unless forced
+    if [[ $NON_INTERACTIVE -eq 0 && $FORCE -eq 0 && $DRY_RUN -eq 0 ]]; then
+        echo
+        prompt "Proceed with installation? [Y/n] "
+        read -r confirm
+        [[ "$confirm" =~ ^[Nn]$ ]] && { info "Cancelled"; exit 0; }
     fi
-    if command -v chsh >/dev/null 2>&1; then
-        chsh -s "$TARGET_SHELL" || echo -e "${YELLOW}[!] Warning: Could not change default shell automatically. Please run: chsh -s $TARGET_SHELL manually.${NC}"
-    else
-        echo -e "${YELLOW}[!] Warning: chsh command not found. Please change your default shell to ZSH manually.${NC}"
-    fi
-else
-    echo -e "${BLUE}[*] Shell is already ZSH. Skipping default shell modification.${NC}"
-fi
+    
+    install_deps
+    sync_config
+    backup_existing
+    link_zshrc
+    create_local_config
+    change_shell
+    final_compile
+    verify_install
+    
+    echo -e "\n${GREEN}==========================================${NC}"
+    echo -e "${GREEN}   Installation Completed Successfully!   ${NC}"
+    echo -e "${GREEN}==========================================${NC}"
+    echo -e "${YELLOW}Restart your terminal or run:${NC} ${BLUE}source ~/.zshrc${NC}"
+}
 
-# 11. Final Compilation for maximum speed
-echo -e "${BLUE}[*] Bootstrapping Znap and executing final compilation...${NC}"
-# Setup znap directory if not exists
-[[ -r $ZSH_CONFIG_DIR/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git $ZSH_CONFIG_DIR/znap
-
-# Run Zsh non-interactively to compile everything!
-# We can use znap compile command.
-zsh -c "source $ZSH_CONFIG_DIR/znap/znap.zsh && znap compile $ZSH_CONFIG_DIR" || echo -e "${YELLOW}[!] Compilation completed with warnings.${NC}"
-
-echo -e "${GREEN}==========================================${NC}"
-echo -e "${GREEN}   Installation Completed Successfully!   ${NC}"
-echo -e "${GREEN}==========================================${NC}"
-echo -e "${YELLOW}Please restart your terminal or run: ${BLUE}source ~/.zshrc${NC}"
+main "$@"

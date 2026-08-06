@@ -1,0 +1,15 @@
+# Znap compiled files
+*.zwc
+
+# Znap-managed plugin clones (not part of this repo)
+/znap/
+/ohmyzsh/
+/zsh-users/
+/zdharma-continuum/
+/marlonrichert/
+/mfaerevaag/
+/djui/
+/rupa/
+
+# Runtime state
+.last_update_check

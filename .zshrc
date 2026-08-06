@@ -113,7 +113,17 @@ fi
 
 # Load heavier/non-essential plugins only on Desktop
 if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
-    znap source marlonrichert/zcolors
+    # zcolors has a non-standard layout (single `zcolors` script, no plugin.zsh),
+    # so `znap source` cannot find it. Source it directly instead.
+    if [[ -r "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors" ]]; then
+        source "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors"
+    else
+        # Clone lazily on first run (znap manages the clone if it's missing)
+        znap source marlonrichert/zcolors 2>/dev/null
+        [[ -r "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors" ]] && \
+            source "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors"
+    fi
+
     znap source mfaerevaag/wd
     znap source djui/alias-tips
     if [[ "$ENABLE_PYTHON" == "yes" ]]; then
