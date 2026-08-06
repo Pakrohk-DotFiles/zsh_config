@@ -26,6 +26,9 @@ fi
 [[ -r $ZSH_CONFIG_DIR/znap/znap.zsh ]] || git clone --depth 1 https://github.com/marlonrichert/zsh-snap.git $ZSH_CONFIG_DIR/znap
 source $ZSH_CONFIG_DIR/znap/znap.zsh
 
+# Disable warncreateglobal (enabled by znap opts) to silence plugin global-var warnings
+setopt NO_WARN_CREATE_GLOBAL
+
 ########################################
 # External Configs & Overrides (Priority)
 ########################################
@@ -113,16 +116,10 @@ fi
 
 # Load heavier/non-essential plugins only on Desktop
 if [[ "$ZSH_ENV_TYPE" != "server" ]]; then
-    # zcolors has a non-standard layout (single `zcolors` script, no plugin.zsh),
-    # so `znap source` cannot find it. Source it directly instead.
-    if [[ -r "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors" ]]; then
-        source "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors"
-    else
-        # Clone lazily on first run (znap manages the clone if it's missing)
-        znap source marlonrichert/zcolors 2>/dev/null
-        [[ -r "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors" ]] && \
-            source "$ZSH_CONFIG_DIR/marlonrichert/zcolors/zcolors"
-    fi
+    # zcolors: single plain `zcolors` script (no plugin.zsh), so `znap source`
+    # cannot handle it. It is a program: put it on PATH; the `znap eval` below
+    # runs `zcolors` and caches its output (which defines colors/functions).
+    export PATH="$ZSH_CONFIG_DIR/marlonrichert/zcolors:$PATH"
 
     znap source mfaerevaag/wd
     znap source djui/alias-tips
